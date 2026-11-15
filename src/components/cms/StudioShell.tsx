@@ -41,6 +41,15 @@ interface ModuleDefinition {
   hash: string;
 }
 
+/**
+ * Badge ringkas pada sidebar. `text` sengaja pendek agar tata letak kolom
+ * tidak berubah; penjelasan lengkap dipindahkan ke `hint` sebagai tooltip.
+ */
+interface ModuleBadge {
+  text: string;
+  hint: string;
+}
+
 const MODULES: ModuleDefinition[] = [
   { key: "proyek", index: "01", label: "Manajer Proyek", icon: "grid", hash: "#proyek" },
   { key: "sampah", index: "02", label: "Tempat Sampah", icon: "archive", hash: "#sampah" },
@@ -92,7 +101,12 @@ export function StudioShell({ session }: { session: AdminSession }) {
 
   const counts = snapshot?.counts;
 
-  const moduleCount = useMemo<Record<ModuleKey, number | null>>(() => {
+  /**
+   * Badge sidebar sengaja membedakan "jumlah wadah" dari "jumlah yang tampil
+   * di situs". Tanpa ini, angka seperti 17 pada Bagian Profil terbaca seolah
+   * 17 bagian siap tayang, padahal baru satu yang terisi.
+   */
+  const moduleBadge = useMemo<Record<ModuleKey, ModuleBadge | null>>(() => {
     if (!snapshot) {
       return {
         proyek: null,
@@ -109,19 +123,62 @@ export function StudioShell({ session }: { session: AdminSession }) {
       };
     }
 
+    const { counts: c, database } = snapshot;
+    const activeProjects = c.projectsPublished + c.projectsDraft;
+    const filledSections = database.profileSections.filter(
+      (section) => section.entries.length > 0
+    ).length;
+    const publishedArticles = database.articles.filter(
+      (article) => article.status === "PUBLISHED"
+    ).length;
+    const unread = c.inquiriesUnread;
+
     return {
-      proyek: snapshot.counts.projectsPublished + snapshot.counts.projectsDraft,
-      sampah: snapshot.counts.projectsArchived,
-      "rekam-jejak":
-        snapshot.database.experiences.length + snapshot.database.certifications.length,
-      profil: snapshot.counts.profileSections,
-      "tech-stack": snapshot.counts.skills,
-      jurnal: snapshot.counts.articles,
-      rekomendasi: snapshot.database.testimonials.length,
-      "kotak-masuk": snapshot.counts.inquiriesUnread,
-      "media-sosial": snapshot.counts.socialLinks,
+      proyek: {
+        text: String(activeProjects),
+        hint:
+          `${c.projectsPublished} terbit, ${c.projectsDraft} draf, ` +
+          `${c.projectsArchived} di tempat sampah`
+      },
+      sampah: {
+        text: String(c.projectsArchived),
+        hint: `${c.projectsArchived} proyek menunggu hapus permanen`
+      },
+      "rekam-jejak": {
+        text: String(database.experiences.length + database.certifications.length),
+        hint: `${database.experiences.length} pengalaman, ${database.certifications.length} sertifikasi`
+      },
+      profil: {
+        text: `${filledSections}/${c.profileSections}`,
+        hint:
+          `${filledSections} dari ${c.profileSections} bagian terisi ` +
+          `(${c.profileEntries} entri). Bagian kosong tidak tampil di situs.`
+      },
+      "tech-stack": {
+        text: String(c.skills),
+        hint: `${c.skills} keahlian`
+      },
+      jurnal: {
+        text: `${publishedArticles}/${c.articles}`,
+        hint: `${publishedArticles} terbit, ${c.articles - publishedArticles} draf`
+      },
+      rekomendasi: {
+        text: String(database.testimonials.length),
+        hint: `${database.testimonials.length} rekomendasi`
+      },
+      "kotak-masuk": {
+        text: String(unread),
+        hint: `${unread} pesan belum dibaca`
+      },
+      "media-sosial": {
+        text: String(c.socialLinks),
+        hint: `${c.socialLinks} tautan sosial, ${c.mediaAssets} aset media`
+      },
       konfigurasi: null,
-      audit: snapshot.counts.auditLogs
+      audit: {
+        text: String(c.auditLogs),
+        hint: `${c.auditLogs} catatan audit`
+      }
     };
   }, [snapshot]);
 
@@ -178,8 +235,8 @@ export function StudioShell({ session }: { session: AdminSession }) {
 
         <nav className="admin-nav" aria-label="Modul Studio">
           {MODULES.map((module) => {
-            const count = moduleCount[module.key];
-            const isAlert = module.key === "kotak-masuk" && Boolean(count);
+            const badge = moduleBadge[module.key];
+            const isAlert = module.key === "kotak-masuk" && Boolean(badge && counts?.inquiriesUnread);
             return (
               <button
                 key={module.key}
@@ -188,18 +245,19 @@ export function StudioShell({ session }: { session: AdminSession }) {
                 data-active={active === module.key}
                 onClick={() => select(module.key)}
                 aria-current={active === module.key ? "page" : undefined}
+                title={badge?.hint}
               >
                 <span className="admin-nav__index">{module.index}</span>
                 <span style={{ display: "flex", alignItems: "center", gap: 7 }}>
                   <Icon name={module.icon} size={11} />
                   {module.label}
                 </span>
-                {count !== null ? (
+                {badge ? (
                   <span
                     className={`admin-nav__count ${isAlert ? "admin-nav__count--alert" : ""}`}
-                    aria-label={`${count} entri`}
+                    aria-label={badge.hint}
                   >
-                    {String(count).padStart(2, "0")}
+                    {badge.text}
                   </span>
                 ) : (
                   <span />

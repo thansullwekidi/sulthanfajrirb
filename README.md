@@ -115,6 +115,25 @@ Karena katalog dan jurnal masih kosong, `/karya` dan `/catatan-lab` menampilkan 
 
 Palet perintah dapat dibuka dengan `Ctrl+K` / `Cmd+K` dari halaman mana pun.
 
+### Arti angka pada sidebar
+
+Badge di samping tiap modul **tidak selalu berisi satu angka mentah**. Untuk modul yang punya dua keadaan, badge memakai format `terisi/total` agar tidak terbaca menyesatkan. Arahkan kursor ke badge untuk melihat rinciannya sebagai tooltip.
+
+| Modul | Badge | Arti |
+| --- | --- | --- |
+| Manajer Proyek | `0` | Proyek terbit + draf (arsip tidak dihitung) |
+| Tempat Sampah | `6` | Proyek berstatus `ARCHIVED` |
+| Rekam Jejak | `2` | Pengalaman + sertifikasi |
+| Bagian Profil | `1/17` | Bagian terisi dari total bagian — **17 wadah, 1 terisi** |
+| Tech Stack | `8` | Jumlah keahlian |
+| Jurnal Lab | `0/4` | Artikel terbit dari total artikel — **4 artikel, semua draf** |
+| Rekomendasi | `0` | Jumlah testimoni |
+| Kotak Masuk | `1` | Pesan belum dibaca |
+| Media & Sosial | `0` | Tautan media sosial |
+| Log Audit | `403` | Jumlah catatan audit |
+
+Bagian profil atau artikel yang kosong/draf **tidak dirender** di situs. Jadi bila badge menunjukkan `1/17`, hanya satu bagian yang muncul di `/rekam-jejak` — itu perilaku benar, bukan data hilang.
+
 ### Pemetaan ke akar skema LinkedIn
 
 Tujuh bagian inti dipetakan langsung ke skema referensi LinkedIn, bukan ditiru dari tampilannya. Kolom di kiri adalah nama field LinkedIn, di kanan tempat penyimpanannya di proyek ini.
@@ -245,6 +264,7 @@ Skrip ini idempoten: koleksi dan kolom yang sudah ada tidak ditimpa, dan bagian 
 | `node scripts/e2e-linkedin-parity.cjs` | Uji kesetaraan LinkedIn: Proyek, keahlian unggulan, rekomendasi berfoto |
 | `node scripts/e2e-linkedin-depth.cjs` | Uji kedalaman struktur 7 bagian vs akar skema LinkedIn (tanggal terstruktur, bidang studi, catatan, posisi penghargaan) |
 | `node scripts/e2e-career-break.cjs` | Uji bagian Jeda Karier dan kelengkapan 17 jenis bagian LinkedIn |
+| `node scripts/e2e-studio-badge.cjs` | Uji kejujuran badge sidebar Studio dan konsistensi data dengan halaman publik |
 | `node scripts/migrate-media-social.cjs` | Migrasi basis data live ke skema media & sosial |
 | `node scripts/migrate-linkedin-parity.cjs` | Migrasi basis data live: bagian Proyek, foto/tautan rekomendasi, keahlian unggulan |
 | `node scripts/migrate-linkedin-depth.cjs` | Migrasi basis data live: tanggal terstruktur pengalaman, bidang studi, catatan entri |
