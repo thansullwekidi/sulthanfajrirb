@@ -71,6 +71,8 @@ function coerceDatabase(input: unknown): Database {
       endDate: entry.endDate ?? "",
       isCurrent: entry.isCurrent ?? false,
       description: entry.description ?? "",
+      fieldOfStudy: entry.fieldOfStudy ?? "",
+      notes: entry.notes ?? "",
       url: entry.url ?? "",
       imageUrl: entry.imageUrl ?? "",
       logoUrl: entry.logoUrl ?? "",
@@ -107,6 +109,9 @@ function coerceDatabase(input: unknown): Database {
     experiences: array(raw.experiences, seed.experiences).map((experience) => ({
       ...experience,
       employmentType: experience.employmentType ?? "FULL_TIME",
+      startDate: experience.startDate ?? "",
+      endDate: experience.endDate ?? "",
+      isCurrent: experience.isCurrent ?? false,
       location: experience.location ?? "",
       workMode: experience.workMode ?? "ON_SITE",
       description: experience.description ?? "",

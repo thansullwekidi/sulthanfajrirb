@@ -165,6 +165,26 @@ function EntryImage({ url, title, wide }: { url: string; title: string; wide?: b
   );
 }
 
+/** Bidang studi terpisah dari gelar (mengikuti `fieldsOfStudy` LinkedIn). */
+function EntryFieldOfStudy({ entry }: { entry: ProfileEntry }) {
+  if (!entry.fieldOfStudy) return null;
+  return (
+    <span className="timeline__org" style={{ fontSize: 11 }}>
+      {entry.fieldOfStudy}
+    </span>
+  );
+}
+
+/** Catatan tambahan (mengikuti `notes` LinkedIn), hanya dirender bila terisi. */
+function EntryNotes({ entry }: { entry: ProfileEntry }) {
+  if (!entry.notes) return null;
+  return (
+    <p style={{ fontSize: 11.5, lineHeight: 1.65, color: "var(--muted)", maxWidth: "70ch" }}>
+      {entry.notes}
+    </p>
+  );
+}
+
 function TimelineLayout({ section }: { section: ProfileSection }) {
   const entries = section.entries.filter((entry) => entry.visible);
   return (
@@ -178,6 +198,7 @@ function TimelineLayout({ section }: { section: ProfileSection }) {
               <div className="stack" style={{ gap: 3 }}>
                 <h3 className="timeline__role">{entry.title}</h3>
                 {entry.subtitle ? <span className="timeline__org">{entry.subtitle}</span> : null}
+                <EntryFieldOfStudy entry={entry} />
                 <EntryByline entry={entry} />
               </div>
             </div>
@@ -186,6 +207,7 @@ function TimelineLayout({ section }: { section: ProfileSection }) {
                 {entry.description}
               </p>
             ) : null}
+            <EntryNotes entry={entry} />
             {entry.imageUrl ? <EntryImage url={entry.imageUrl} title={entry.title} /> : null}
             <EntryTags tags={entry.tags} />
             <EntryLink url={entry.url} label={linkLabel(section)} />
@@ -238,6 +260,11 @@ function ListLayout({ section }: { section: ProfileSection }) {
                   <EntryLogo url={entry.logoUrl} title={entry.title} />
                   <div>
                     <div style={{ fontSize: 13 }}>{entry.title}</div>
+                    {entry.fieldOfStudy ? (
+                      <div className="mono" style={{ fontSize: 9.5, color: "var(--muted)", marginTop: 3 }}>
+                        {entry.fieldOfStudy}
+                      </div>
+                    ) : null}
                     {entry.description ? (
                       <div
                         style={{
@@ -248,6 +275,19 @@ function ListLayout({ section }: { section: ProfileSection }) {
                         }}
                       >
                         {entry.description}
+                      </div>
+                    ) : null}
+                    {entry.notes ? (
+                      <div
+                        style={{
+                          fontSize: 11,
+                          color: "var(--muted)",
+                          lineHeight: 1.6,
+                          marginTop: 4,
+                          fontStyle: "italic"
+                        }}
+                      >
+                        {entry.notes}
                       </div>
                     ) : null}
                     <div style={{ marginTop: 6 }}>
@@ -316,11 +356,17 @@ function GridLayout({ section }: { section: ProfileSection }) {
             ) : null}
           </div>
           <EntryImage url={entry.imageUrl} title={entry.title} wide />
+          {entry.fieldOfStudy ? (
+            <span className="mono" style={{ fontSize: 9.5, color: "var(--muted)" }}>
+              {entry.fieldOfStudy}
+            </span>
+          ) : null}
           {entry.description ? (
             <p style={{ fontSize: 11.5, color: "var(--muted)", lineHeight: 1.65 }}>
               {entry.description}
             </p>
           ) : null}
+          <EntryNotes entry={entry} />
           <EntryByline entry={entry} />
           <EntryTags tags={entry.tags} />
           <EntryLink url={entry.url} label={linkLabel(section)} />

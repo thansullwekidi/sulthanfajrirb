@@ -11,7 +11,7 @@ import {
   SKILL_DOMAINS,
   WORK_MODE_LABELS
 } from "@/contracts/domain";
-import { formatDateId } from "@/contracts/primitives";
+import { formatDateId, formatPeriod } from "@/contracts/primitives";
 import { getSiteConfig } from "@/server/repositories/config.repository";
 import {
   listCertifications,
@@ -92,7 +92,14 @@ export default async function TrajectoryPage() {
         <div className="timeline" style={{ marginTop: 24 }}>
           {experiences.map((experience) => (
             <div key={experience.id} className="timeline__row">
-              <div className="timeline__period">{experience.period}</div>
+              <div className="timeline__period">
+                {formatPeriod(
+                  experience.startDate,
+                  experience.endDate,
+                  experience.isCurrent,
+                  experience.period
+                )}
+              </div>
               <div className="timeline__body">
                 <div style={{ display: "flex", gap: 12, alignItems: "flex-start" }}>
                   {experience.logoUrl ? (

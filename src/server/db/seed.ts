@@ -39,6 +39,9 @@ export function buildSeedDatabase(): Database {
       {
         id: "exp_tvri_desain",
         period: "Feb 2023 — Jul 2023",
+        startDate: "Feb 2023",
+        endDate: "Jul 2023",
+        isCurrent: false,
         role: "Desain grafis",
         organization: "TVRI Stasiun DKI Jakarta",
         type: "KARIER",
@@ -69,6 +72,9 @@ export function buildSeedDatabase(): Database {
       {
         id: "exp_tvri_redaksi",
         period: "Feb 2023 — Jul 2023",
+        startDate: "Feb 2023",
+        endDate: "Jul 2023",
+        isCurrent: false,
         role: "asisten redaktur",
         organization: "TVRI Stasiun DKI Jakarta",
         type: "KARIER",
@@ -133,6 +139,8 @@ export function buildSeedDatabase(): Database {
             endDate: "",
             isCurrent: true,
             description: "",
+            fieldOfStudy: "",
+            notes: "",
             url: "",
             imageUrl: "",
             logoUrl: "",

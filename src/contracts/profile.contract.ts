@@ -36,6 +36,8 @@ export const profileEntryBaseSchema = z.object({
   endDate: z.string().trim().max(40, "Tanggal selesai terlalu panjang.").default(""),
   isCurrent: z.boolean().default(false),
   description: z.string().trim().max(4000, "Deskripsi maksimal 4000 karakter.").default(""),
+  fieldOfStudy: z.string().trim().max(180, "Bidang studi terlalu panjang.").default(""),
+  notes: z.string().trim().max(2000, "Catatan maksimal 2000 karakter.").default(""),
   url: optionalHttpUrl("Tautan entri"),
   imageUrl: optionalImageUrl("URL gambar"),
   logoUrl: optionalImageUrl("URL logo"),

@@ -216,6 +216,8 @@ export async function createProfileEntry(
       endDate: input.endDate,
       isCurrent: input.isCurrent,
       description: input.description,
+      fieldOfStudy: input.fieldOfStudy,
+      notes: input.notes,
       url: input.url,
       imageUrl: input.imageUrl,
       logoUrl: input.logoUrl,
@@ -256,6 +258,8 @@ export async function updateProfileEntry(
     entry.endDate = input.endDate;
     entry.isCurrent = input.isCurrent;
     entry.description = input.description;
+    entry.fieldOfStudy = input.fieldOfStudy;
+    entry.notes = input.notes;
     entry.url = input.url;
     entry.imageUrl = input.imageUrl;
     entry.logoUrl = input.logoUrl;

@@ -285,12 +285,22 @@ export interface ProfileEntryLabels {
   requireUrl?: boolean;
   /** Tampilkan kolom penulis & penerbit terpisah (khas publikasi/paten). */
   showAuthors?: boolean;
+  /**
+   * Label kolom bidang studi (`fieldsOfStudy` LinkedIn). Kosong berarti kolom
+   * disembunyikan — hanya jenis bagian yang memang punya bidang studi.
+   */
+  fieldOfStudyLabel?: string;
+  /**
+   * Label kolom catatan tambahan (`notes` LinkedIn). Kosong berarti kolom
+   * disembunyikan agar formulir tidak melebar tanpa guna.
+   */
+  notesLabel?: string;
 }
 
 export const PROFILE_ENTRY_LABELS: Record<ProfileSectionKind, ProfileEntryLabels> = {
   EDUCATION: {
     title: "Sekolah / Institusi",
-    subtitle: "Jenjang & Jurusan",
+    subtitle: "Gelar",
     meta: "Nilai / IPK",
     description: "Aktivitas & Organisasi",
     tags: "Keahlian",
@@ -300,7 +310,9 @@ export const PROFILE_ENTRY_LABELS: Record<ProfileSectionKind, ProfileEntryLabels
     showImage: false,
     imageLabel: "Foto Kegiatan Pendidikan",
     logoLabel: "Logo Institusi Pendidikan",
-    urlLabel: "Tautan Institusi"
+    urlLabel: "Tautan Institusi",
+    fieldOfStudyLabel: "Bidang Studi / Jurusan",
+    notesLabel: "Catatan Tambahan"
   },
   COURSES: {
     title: "Nama Mata Kuliah",
@@ -341,14 +353,15 @@ export const PROFILE_ENTRY_LABELS: Record<ProfileSectionKind, ProfileEntryLabels
   HONORS: {
     title: "Nama Penghargaan",
     subtitle: "Penerbit",
-    meta: "",
+    meta: "Posisi Saat Menerima",
     description: "Deskripsi",
     tags: "",
     showDates: true,
     showLocation: false,
     showUrl: true,
     showImage: true,
-    imageLabel: "Foto Penghargaan"
+    imageLabel: "Foto Penghargaan",
+    notesLabel: "Catatan Tambahan"
   },
   PUBLICATIONS: {
     title: "Judul Publikasi",
@@ -604,7 +617,17 @@ export interface Project {
 
 export interface Experience {
   id: string;
+  /**
+   * Periode bebas, dipertahankan sebagai cadangan bila tanggal terstruktur kosong.
+   * LinkedIn menyimpan posisi sebagai startMonthYear/endMonthYear terpisah.
+   */
   period: string;
+  /** Bulan/tahun mulai, mis. "Feb 2023". */
+  startDate: string;
+  /** Bulan/tahun selesai; kosong berarti masih berlangsung (seperti LinkedIn). */
+  endDate: string;
+  /** Turunan dari `endDate` kosong, disimpan eksplisit agar render konsisten. */
+  isCurrent: boolean;
   role: string;
   organization: string;
   type: ExperienceType;
@@ -696,6 +719,16 @@ export interface ProfileEntry {
   endDate: string;
   isCurrent: boolean;
   description: string;
+  /**
+   * Bidang studi terpisah dari gelar, mengikuti `fieldsOfStudy` LinkedIn.
+   * Pada Pendidikan, `subtitle` menyimpan gelar dan kolom ini menyimpan jurusan.
+   */
+  fieldOfStudy: string;
+  /**
+   * Catatan tambahan, mengikuti `notes` LinkedIn — berbeda dari `description`
+   * yang menyimpan aktivitas/organisasi.
+   */
+  notes: string;
   url: string;
   imageUrl: string;
   /** Logo kecil khusus institusi/lembaga (pendidikan, organisasi, relawan). */

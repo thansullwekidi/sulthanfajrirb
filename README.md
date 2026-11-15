@@ -115,6 +115,24 @@ Karena katalog dan jurnal masih kosong, `/karya` dan `/catatan-lab` menampilkan 
 
 Palet perintah dapat dibuka dengan `Ctrl+K` / `Cmd+K` dari halaman mana pun.
 
+### Pemetaan ke akar skema LinkedIn
+
+Tujuh bagian inti dipetakan langsung ke skema referensi LinkedIn, bukan ditiru dari tampilannya. Kolom di kiri adalah nama field LinkedIn, di kanan tempat penyimpanannya di proyek ini.
+
+| Bagian | Field akar LinkedIn | Disimpan sebagai |
+| --- | --- | --- |
+| **Pengalaman** (Position) | `title`, `companyName`, `description`, `startMonthYear`, `endMonthYear`, `geoPositionLocation.displayLocationName` | `role`, `organization`, `description`, `startDate`, `endDate` (kosong = masih berlangsung), `location` |
+| **Pendidikan** (Education) | `schoolName`, `degreeName`, `fieldsOfStudy.fieldOfStudyName`, `grade.grade`, `activities`, `notes`, `startMonthYear`, `endMonthYear` | `title`, `subtitle`, `fieldOfStudy`, `meta`, `description`, `notes`, `startDate`, `endDate` |
+| **Lisensi & Sertifikasi** (Certification) | `name`, `authority`, `licenseNumber`, `startMonthYear`, `endMonthYear`, `url` | `title`, `issuer`, `credentialId`, `issueDate`, `expiryDate`, `verifyUrl` |
+| **Keahlian** (Skill) | `name` (+ `endorsement` dan Top Skills) | `name`, `endorsements`, `pinned` |
+| **Publikasi** (Publication) | `name`, `authors[].name`, `publisher`, `date`, `description`, `url` | `title`, `authors`, `publisher`, `startDate`, `description`, `url` |
+| **Penghargaan** (Honor) | `title`, `issuer`, `issueDate`, `occupation`, `description` | `title`, `subtitle`, `startDate`, `meta`, `description` (+ `notes`) |
+| **Proyek** (Project) | `title`, `description`, `members[].name`, `occupation`, `startMonthYear`, `endMonthYear`, `url` | `title`, `description`, `authors`, `subtitle`, `startDate`, `endDate`, `url` |
+
+Perbedaan yang disengaja: LinkedIn menyimpan tanggal sebagai objek `{month, year}` dan nama sebagai `MultiLocaleString` karena mendukung banyak bahasa. Situs ini satu bahasa, jadi tanggal disimpan sebagai teks `"Feb 2023"` dan nama sebagai string biasa — struktur field-nya sama, bentuk serialisasinya lebih sederhana.
+
+Kolom `fieldOfStudy` dan `notes` hanya muncul pada jenis bagian yang memilikinya (Pendidikan, Penghargaan), mengikuti `PROFILE_ENTRY_LABELS`. Keduanya dirender kondisional di halaman publik.
+
 ### Bagian Profil ala LinkedIn
 
 Modul **Bagian Profil** memetakan seluruh bagian profil LinkedIn ke satu model data generik: `ProfileSection` (dengan `kind`) berisi `ProfileEntry`. Tujuh belas jenis bagian tersedia — Pendidikan, Mata Kuliah, Bahasa, Organisasi, Penghargaan, Publikasi, Paten, Skor Tes, Pengalaman Relawan, **Proyek**, Kepedulian, Minat, Sorotan, Aktivitas, Layanan, Rekomendasi, dan Bagian Kustom — masing-masing dengan label kolom sendiri (`PROFILE_ENTRY_LABELS`) dan tata letak publik otomatis (`PROFILE_SECTION_LAYOUT`: linimasa, daftar, kartu, atau unggahan).
@@ -128,6 +146,7 @@ Kolom media bersifat kondisional dan hanya dirender bila terisi:
 | `logoUrl` | Pendidikan, Organisasi, Relawan, Proyek | Logo institusi tampil sebagai lencana di samping judul |
 | `imageUrl` | Publikasi, Paten, Sorotan, Aktivitas, Layanan, Rekomendasi, Proyek, Kustom | Sampul publikasi, tangkapan layar proyek, atau foto kegiatan |
 | `authors`, `publisher` | Publikasi, Paten, Proyek, Kustom | Ditampilkan sebagai baris penulis/penerbit |
+| `fieldOfStudy`, `notes` | Pendidikan, Penghargaan | Bidang studi terpisah dari gelar; catatan tambahan terpisah dari deskripsi |
 
 **Publikasi dan paten wajib menyertakan tautan langsung** ke dokumen aslinya. Aturan ini ditegakkan dua kali: di formulir Studio dan di repositori (`ENTRY_URL_REQUIRED`), sehingga tidak dapat dilewati lewat pemanggilan API langsung. Tautan mesin pencari (Google/Bing) ditolak karena bukan sumber publikasi.
 
@@ -198,8 +217,10 @@ Skrip ini idempoten: koleksi dan kolom yang sudah ada tidak ditimpa, dan bagian 
 | `npm run typecheck` | Pemeriksaan TypeScript tanpa emit |
 | `node scripts/e2e-media-social.cjs` | Uji end-to-end media, media sosial, dan entri profil (server harus berjalan) |
 | `node scripts/e2e-linkedin-parity.cjs` | Uji kesetaraan LinkedIn: Proyek, keahlian unggulan, rekomendasi berfoto |
+| `node scripts/e2e-linkedin-depth.cjs` | Uji kedalaman struktur 7 bagian vs akar skema LinkedIn (tanggal terstruktur, bidang studi, catatan, posisi penghargaan) |
 | `node scripts/migrate-media-social.cjs` | Migrasi basis data live ke skema media & sosial |
 | `node scripts/migrate-linkedin-parity.cjs` | Migrasi basis data live: bagian Proyek, foto/tautan rekomendasi, keahlian unggulan |
+| `node scripts/migrate-linkedin-depth.cjs` | Migrasi basis data live: tanggal terstruktur pengalaman, bidang studi, catatan entri |
 
 ## Catatan Desain
 

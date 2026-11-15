@@ -60,6 +60,25 @@ export function isSafeImageUrl(value: string): boolean {
   return isInternalMediaUrl(value) || isSafeHttpUrl(value);
 }
 
+/**
+ * Rentang waktu bergaya LinkedIn: "Feb 2023 — Jul 2023", "Feb 2023 — Sekarang",
+ * atau "Feb 2023". Jatuh kembali ke `fallback` (periode teks bebas) bila tanggal
+ * terstruktur belum diisi, agar data lama tetap tampil.
+ */
+export function formatPeriod(
+  startDate: string,
+  endDate: string,
+  isCurrent: boolean,
+  fallback = ""
+): string {
+  if (!startDate && !endDate) return fallback;
+  if (isCurrent || !endDate) {
+    return startDate ? `${startDate} — Sekarang` : fallback;
+  }
+  if (!startDate) return endDate;
+  return `${startDate} — ${endDate}`;
+}
+
 export function formatDateId(iso: string): string {
   const date = new Date(iso);
   if (Number.isNaN(date.getTime())) return "—";

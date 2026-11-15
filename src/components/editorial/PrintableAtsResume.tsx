@@ -10,7 +10,7 @@ import {
   EMPLOYMENT_TYPE_LABELS,
   WORK_MODE_LABELS
 } from "@/contracts/domain";
-import { formatDateId } from "@/contracts/primitives";
+import { formatDateId, formatPeriod } from "@/contracts/primitives";
 
 interface ResumeProps {
   config: SiteConfig;
@@ -63,7 +63,14 @@ export function PrintableAtsResume({
           <div key={experience.id} className="cv-entry">
             <div className="cv-entry__head">
               <span className="cv-entry__title">{experience.role}</span>
-              <span className="cv-entry__meta">{experience.period}</span>
+              <span className="cv-entry__meta">
+                {formatPeriod(
+                  experience.startDate,
+                  experience.endDate,
+                  experience.isCurrent,
+                  experience.period
+                )}
+              </span>
             </div>
             <span className="cv-entry__sub">
               {experience.organization}

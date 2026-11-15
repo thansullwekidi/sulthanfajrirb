@@ -182,6 +182,8 @@ function EntryForm({
   const [endDate, setEndDate] = useState(entry?.endDate ?? "");
   const [isCurrent, setIsCurrent] = useState(entry?.isCurrent ?? false);
   const [description, setDescription] = useState(entry?.description ?? "");
+  const [fieldOfStudy, setFieldOfStudy] = useState(entry?.fieldOfStudy ?? "");
+  const [notes, setNotes] = useState(entry?.notes ?? "");
   const [url, setUrl] = useState(entry?.url ?? "");
   const [imageUrl, setImageUrl] = useState(entry?.imageUrl ?? "");
   const [logoUrl, setLogoUrl] = useState(entry?.logoUrl ?? "");
@@ -209,6 +211,8 @@ function EntryForm({
       endDate,
       isCurrent,
       description,
+      fieldOfStudy,
+      notes,
       url,
       imageUrl,
       logoUrl,
@@ -347,6 +351,22 @@ function EntryForm({
         </Field>
       ) : null}
 
+      {labels.fieldOfStudyLabel ? (
+        <Field
+          label={labels.fieldOfStudyLabel}
+          htmlFor="pre-field-of-study"
+          error={errors.fieldOfStudy}
+          hint="opsional, mis. Desain Komunikasi Visual"
+        >
+          <input
+            id="pre-field-of-study"
+            className="input"
+            value={fieldOfStudy}
+            onChange={(event) => setFieldOfStudy(event.target.value)}
+          />
+        </Field>
+      ) : null}
+
       <Field label={labels.description} htmlFor="pre-description" error={errors.description}>
         <textarea
           id="pre-description"
@@ -356,6 +376,23 @@ function EntryForm({
           onChange={(event) => setDescription(event.target.value)}
         />
       </Field>
+
+      {labels.notesLabel ? (
+        <Field
+          label={labels.notesLabel}
+          htmlFor="pre-notes"
+          error={errors.notes}
+          hint="opsional, rincian yang tidak masuk deskripsi"
+        >
+          <textarea
+            id="pre-notes"
+            className="textarea"
+            rows={3}
+            value={notes}
+            onChange={(event) => setNotes(event.target.value)}
+          />
+        </Field>
+      ) : null}
 
       {labels.tags ? (
         <Field label={labels.tags} htmlFor="pre-tags" error={errors.tags} hint="pisahkan dengan koma">

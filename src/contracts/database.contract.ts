@@ -3,7 +3,7 @@ import { siteConfigInputSchema } from "./config.contract";
 import {
   articleInputSchema,
   certificationInputSchema,
-  experienceInputSchema,
+  experienceBaseSchema,
   skillInputSchema,
   testimonialInputSchema
 } from "./content.contract";
@@ -41,7 +41,7 @@ const projectRecordSchema = projectInputSchema.extend({
   archivedAt: z.string().trim().nullable().optional()
 });
 
-const experienceRecordSchema = experienceInputSchema.extend({
+const experienceRecordSchema = experienceBaseSchema.extend({
   id: z.string().trim().min(1),
   sortOrder: z.number().int().optional(),
   createdAt: z.string().trim().optional()

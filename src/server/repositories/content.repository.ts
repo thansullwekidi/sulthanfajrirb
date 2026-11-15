@@ -64,6 +64,9 @@ export async function createExperience(input: ExperienceInput): Promise<Experien
     const entity: Experience = {
       id: createEntityId("exp"),
       period: input.period,
+      startDate: input.startDate,
+      endDate: input.endDate,
+      isCurrent: input.isCurrent,
       role: input.role,
       organization: input.organization,
       type: input.type,
@@ -95,6 +98,9 @@ export async function updateExperience(id: string, input: ExperienceInput): Prom
     const entity = draft.experiences.find((item) => item.id === id);
     if (!entity) throw notFound("Pengalaman");
     entity.period = input.period;
+    entity.startDate = input.startDate;
+    entity.endDate = input.endDate;
+    entity.isCurrent = input.isCurrent;
     entity.role = input.role;
     entity.organization = input.organization;
     entity.type = input.type;

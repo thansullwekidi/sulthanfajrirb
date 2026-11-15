@@ -138,6 +138,9 @@ export async function importDatabase(input: DatabaseImport): Promise<Database> {
     experiences: input.experiences.map((experience, index) => ({
       id: experience.id,
       period: experience.period,
+      startDate: experience.startDate ?? "",
+      endDate: experience.endDate ?? "",
+      isCurrent: experience.isCurrent ?? false,
       role: experience.role,
       organization: experience.organization,
       type: experience.type,
@@ -212,6 +215,8 @@ export async function importDatabase(input: DatabaseImport): Promise<Database> {
           endDate: entry.endDate,
           isCurrent: entry.isCurrent,
           description: entry.description,
+          fieldOfStudy: entry.fieldOfStudy ?? "",
+          notes: entry.notes ?? "",
           url: entry.url,
           imageUrl: entry.imageUrl,
           logoUrl: entry.logoUrl,

@@ -32,8 +32,16 @@ const tagsField = z.preprocess(
   z.array(z.string().trim().min(1)).max(30, "Maksimal 30 tag.")
 );
 
-export const experienceInputSchema = z.object({
-  period: nonEmptyText("Periode", 4, 60),
+/**
+ * Skema dasar pengalaman (tanpa aturan lintas-kolom).
+ * Diekspor terpisah agar lapisan impor basis data dapat memakai `.extend()`.
+ */
+export const experienceBaseSchema = z.object({
+  /** Periode bebas; boleh kosong bila tanggal terstruktur diisi. */
+  period: z.string().trim().max(60, "Periode terlalu panjang.").default(""),
+  startDate: z.string().trim().max(40, "Tanggal mulai terlalu panjang.").default(""),
+  endDate: z.string().trim().max(40, "Tanggal selesai terlalu panjang.").default(""),
+  isCurrent: z.boolean().default(false),
   role: nonEmptyText("Peran", 3, 120),
   organization: nonEmptyText("Institusi", 3, 140),
   type: z.enum(EXPERIENCE_TYPES, {
@@ -55,6 +63,25 @@ export const experienceInputSchema = z.object({
   skills: tagsField,
   logoUrl: optionalImageUrl("Logo instansi"),
   organizationUrl: optionalHttpUrl("Tautan instansi")
+});
+
+export const experienceInputSchema = experienceBaseSchema.superRefine((value, ctx) => {
+  // LinkedIn mewajibkan semacam rentang waktu: periode bebas ATAU tanggal terstruktur.
+  if (!value.period && !value.startDate) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["period"],
+      message: "Isi periode, atau tanggal mulai bulan/tahun."
+    });
+  }
+  // Posisi yang masih berlangsung tidak boleh punya tanggal selesai.
+  if (value.isCurrent && value.endDate) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["endDate"],
+      message: "Kosongkan tanggal selesai bila posisi masih berlangsung."
+    });
+  }
 });
 
 export const certificationInputSchema = z.object({

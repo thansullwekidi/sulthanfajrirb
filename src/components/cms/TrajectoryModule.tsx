@@ -25,6 +25,7 @@ import {
   type WorkMode
 } from "@/contracts/domain";
 import { fieldErrorsFromZod } from "@/contracts/validation";
+import { formatPeriod } from "@/contracts/primitives";
 
 type Tab = "pengalaman" | "sertifikasi";
 
@@ -41,6 +42,9 @@ function ExperienceForm({
 }) {
   const { run, isSubmitting, fieldErrors, reset } = useAdminAction();
   const [period, setPeriod] = useState(experience?.period ?? "");
+  const [startDate, setStartDate] = useState(experience?.startDate ?? "");
+  const [endDate, setEndDate] = useState(experience?.endDate ?? "");
+  const [isCurrent, setIsCurrent] = useState(experience?.isCurrent ?? false);
   const [role, setRole] = useState(experience?.role ?? "");
   const [organization, setOrganization] = useState(experience?.organization ?? "");
   const [type, setType] = useState<ExperienceType>(experience?.type ?? "AKADEMIK");
@@ -67,6 +71,9 @@ function ExperienceForm({
 
     const parsed = experienceInputSchema.safeParse({
       period,
+      startDate,
+      endDate,
+      isCurrent,
       role,
       organization,
       type,
@@ -126,15 +133,50 @@ function ExperienceForm({
         ) : null}
 
         <div className="form-row-2">
-          <Field label="Periode" htmlFor="exp-period" error={errors.period} hint="2024 — 2026">
+          <Field
+            label="Mulai (bulan & tahun)"
+            htmlFor="exp-start"
+            error={errors.startDate}
+            hint="mis. Feb 2023"
+          >
             <input
-              id="exp-period"
+              id="exp-start"
               className="input mono"
-              value={period}
-              onChange={(event) => setPeriod(event.target.value)}
-              placeholder="2024 — 2026"
+              value={startDate}
+              onChange={(event) => setStartDate(event.target.value)}
+              placeholder="Feb 2023"
             />
           </Field>
+          <Field
+            label="Selesai (bulan & tahun)"
+            htmlFor="exp-end"
+            error={errors.endDate}
+            hint="kosongkan bila masih berlangsung"
+          >
+            <input
+              id="exp-end"
+              className="input mono"
+              value={endDate}
+              onChange={(event) => setEndDate(event.target.value)}
+              placeholder="Jul 2023"
+              disabled={isCurrent}
+            />
+          </Field>
+        </div>
+
+        <label className="check-row">
+          <input
+            type="checkbox"
+            checked={isCurrent}
+            onChange={(event) => {
+              setIsCurrent(event.target.checked);
+              if (event.target.checked) setEndDate("");
+            }}
+          />
+          Saya masih bekerja di sini
+        </label>
+
+        <div className="form-row-2">
           <Field label="Jenis" htmlFor="exp-type" error={errors.type}>
             <select
               id="exp-type"
@@ -148,6 +190,20 @@ function ExperienceForm({
                 </option>
               ))}
             </select>
+          </Field>
+          <Field
+            label="Periode (teks bebas)"
+            htmlFor="exp-period"
+            error={errors.period}
+            hint="opsional, dipakai bila tanggal terstruktur kosong"
+          >
+            <input
+              id="exp-period"
+              className="input mono"
+              value={period}
+              onChange={(event) => setPeriod(event.target.value)}
+              placeholder="2024 — 2026"
+            />
           </Field>
         </div>
 
@@ -624,7 +680,14 @@ export function TrajectoryModule({
                     <div className="trash-item__title">{experience.role}</div>
                     <div className="trash-item__meta">
                       <span>{experience.organization}</span>
-                      <span>{experience.period}</span>
+                      <span>
+                        {formatPeriod(
+                          experience.startDate,
+                          experience.endDate,
+                          experience.isCurrent,
+                          experience.period
+                        )}
+                      </span>
                       <span>{EMPLOYMENT_TYPE_LABELS[experience.employmentType].toUpperCase()}</span>
                       {experience.location ? <span>{experience.location}</span> : null}
                       <span>{EXPERIENCE_TYPE_LABELS[experience.type].toUpperCase()}</span>
