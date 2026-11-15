@@ -267,6 +267,7 @@ Skrip ini idempoten: koleksi dan kolom yang sudah ada tidak ditimpa, dan bagian 
 | `node scripts/e2e-studio-badge.cjs` | Uji kejujuran badge sidebar Studio dan konsistensi data dengan halaman publik |
 | `node scripts/e2e-integrasi-studio-web.cjs` | Uji integrasi menyeluruh: setiap data Studio wajib muncul di halaman publik yang tepat |
 | `node scripts/e2e-cv-limits.cjs` | Uji batas entri CV ATS yang dapat diatur lewat Konfigurasi |
+| `node scripts/e2e-field-parity.cjs` | Uji parity 160 titik: setiap field CMS (termasuk modal) terkirim ke browser |
 | `node scripts/migrate-cv-limits.cjs` | Migrasi basis data live: tambah field batas entri CV (default 3) |
 | `node scripts/migrate-media-social.cjs` | Migrasi basis data live ke skema media & sosial |
 | `node scripts/migrate-linkedin-parity.cjs` | Migrasi basis data live: bagian Proyek, foto/tautan rekomendasi, keahlian unggulan |
