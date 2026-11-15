@@ -210,6 +210,7 @@ export const PROFILE_SECTION_KINDS = [
   "TEST_SCORES",
   "VOLUNTEER",
   "PROJECTS",
+  "CAREER_BREAK",
   "CAUSES",
   "INTERESTS",
   "FEATURED",
@@ -231,6 +232,7 @@ export const PROFILE_SECTION_KIND_LABELS: Record<ProfileSectionKind, string> = {
   TEST_SCORES: "Skor Tes",
   VOLUNTEER: "Pengalaman Relawan",
   PROJECTS: "Proyek",
+  CAREER_BREAK: "Jeda Karier",
   CAUSES: "Kepedulian",
   INTERESTS: "Minat",
   FEATURED: "Sorotan",
@@ -255,6 +257,7 @@ export const PROFILE_SECTION_LAYOUT: Record<ProfileSectionKind, ProfileSectionLa
   TEST_SCORES: "LIST",
   VOLUNTEER: "TIMELINE",
   PROJECTS: "GRID",
+  CAREER_BREAK: "TIMELINE",
   CAUSES: "LIST",
   INTERESTS: "GRID",
   FEATURED: "GRID",
@@ -432,6 +435,17 @@ export const PROFILE_ENTRY_LABELS: Record<ProfileSectionKind, ProfileEntryLabels
     urlLabel: "Tautan Proyek",
     showAuthors: true
   },
+  CAREER_BREAK: {
+    title: "Judul Entri",
+    subtitle: "Keterangan Singkat",
+    meta: "Jenis Jeda",
+    description: "Deskripsi",
+    tags: "Keahlian yang Dikembangkan",
+    showDates: true,
+    showLocation: true,
+    showUrl: false,
+    showImage: false
+  },
   CAUSES: {
     title: "Kepedulian",
     subtitle: "",
@@ -524,6 +538,47 @@ export const PROFILE_ENTRY_LABELS: Record<ProfileSectionKind, ProfileEntryLabels
 export const SKILL_DOMAINS = PROJECT_CATEGORIES;
 export type SkillDomain = ProjectCategory;
 
+/**
+ * Pilihan jenis jeda karier, mengikuti daftar resmi LinkedIn pada fitur
+ * "Add career break". Dibiarkan kosong pun sah — LinkedIn mengizinkan jenis
+ * jeda tidak dipilih selama deskripsi diisi.
+ */
+export const CAREER_BREAK_TYPES = [
+  "PARENTAL_LEAVE",
+  "CAREGIVING",
+  "BEREAVEMENT",
+  "CAREER_TRANSITION",
+  "FULL_TIME_PARENTING",
+  "GAP_YEAR",
+  "LAYOFF",
+  "HEALTH_WELLBEING",
+  "PERSONAL_GOAL",
+  "PROFESSIONAL_DEVELOPMENT",
+  "RELOCATION",
+  "RETIREMENT",
+  "TRAVEL",
+  "VOLUNTARY_WORK",
+  "OTHER"
+] as const;
+export type CareerBreakType = (typeof CAREER_BREAK_TYPES)[number];
+
+export const CAREER_BREAK_TYPE_LABELS: Record<CareerBreakType, string> = {
+  PARENTAL_LEAVE: "Cuti Melahirkan / Mengasuh Anak",
+  CAREGIVING: "Merawat Keluarga",
+  BEREAVEMENT: "Kedukaan",
+  CAREER_TRANSITION: "Transisi Karier",
+  FULL_TIME_PARENTING: "Mengasuh Anak Penuh Waktu",
+  GAP_YEAR: "Tahun Jeda",
+  LAYOFF: "Pemutusan Hubungan Kerja",
+  HEALTH_WELLBEING: "Kesehatan & Kesejahteraan",
+  PERSONAL_GOAL: "Pengejaran Tujuan Pribadi",
+  PROFESSIONAL_DEVELOPMENT: "Pengembangan Profesional",
+  RELOCATION: "Pindah Domisili",
+  RETIREMENT: "Pensiun",
+  TRAVEL: "Perjalanan",
+  VOLUNTARY_WORK: "Kerja Sukarela",
+  OTHER: "Lainnya"
+};
 export const ARTICLE_STATUSES = ["PUBLISHED", "DRAFT"] as const;
 export type ArticleStatus = (typeof ARTICLE_STATUSES)[number];
 

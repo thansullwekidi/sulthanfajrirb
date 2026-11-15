@@ -156,13 +156,25 @@ export function buildSeedDatabase(): Database {
         updatedAt: now
       },
       {
+        id: "prf_mata-kuliah",
+        slug: "mata-kuliah",
+        title: "Mata Kuliah",
+        subtitle: "Rangkaian studi yang ditempuh",
+        kind: "COURSES",
+        visible: true,
+        sortOrder: 2,
+        entries: [],
+        createdAt: now,
+        updatedAt: now
+      },
+      {
         id: "prf_bahasa",
         slug: "bahasa",
         title: "Bahasa",
         subtitle: "Kemampuan bahasa",
         kind: "LANGUAGES",
         visible: true,
-        sortOrder: 2,
+        sortOrder: 3,
         entries: [],
         createdAt: now,
         updatedAt: now
@@ -174,7 +186,7 @@ export function buildSeedDatabase(): Database {
         subtitle: "Peran dan keanggotaan",
         kind: "ORGANIZATIONS",
         visible: true,
-        sortOrder: 3,
+        sortOrder: 4,
         entries: [],
         createdAt: now,
         updatedAt: now
@@ -186,7 +198,7 @@ export function buildSeedDatabase(): Database {
         subtitle: "Prestasi dan pengakuan",
         kind: "HONORS",
         visible: true,
-        sortOrder: 4,
+        sortOrder: 5,
         entries: [],
         createdAt: now,
         updatedAt: now
@@ -198,7 +210,7 @@ export function buildSeedDatabase(): Database {
         subtitle: "Karya tulis dan terbitan",
         kind: "PUBLICATIONS",
         visible: true,
-        sortOrder: 5,
+        sortOrder: 6,
         entries: [],
         createdAt: now,
         updatedAt: now
@@ -210,7 +222,7 @@ export function buildSeedDatabase(): Database {
         subtitle: "Hak kekayaan intelektual",
         kind: "PATENTS",
         visible: true,
-        sortOrder: 6,
+        sortOrder: 7,
         entries: [],
         createdAt: now,
         updatedAt: now
@@ -222,7 +234,7 @@ export function buildSeedDatabase(): Database {
         subtitle: "Hasil uji kemampuan",
         kind: "TEST_SCORES",
         visible: true,
-        sortOrder: 7,
+        sortOrder: 8,
         entries: [],
         createdAt: now,
         updatedAt: now
@@ -234,7 +246,7 @@ export function buildSeedDatabase(): Database {
         subtitle: "Kontribusi sosial dan komunitas",
         kind: "VOLUNTEER",
         visible: true,
-        sortOrder: 8,
+        sortOrder: 9,
         entries: [],
         createdAt: now,
         updatedAt: now
@@ -246,7 +258,19 @@ export function buildSeedDatabase(): Database {
         subtitle: "Karya yang dikerjakan langsung",
         kind: "PROJECTS",
         visible: true,
-        sortOrder: 9,
+        sortOrder: 10,
+        entries: [],
+        createdAt: now,
+        updatedAt: now
+      },
+      {
+        id: "prf_jeda-karier",
+        slug: "jeda-karier",
+        title: "Jeda Karier",
+        subtitle: "Waktu di luar jalur karier linear",
+        kind: "CAREER_BREAK",
+        visible: true,
+        sortOrder: 11,
         entries: [],
         createdAt: now,
         updatedAt: now
@@ -258,7 +282,7 @@ export function buildSeedDatabase(): Database {
         subtitle: "Isu yang diperjuangkan",
         kind: "CAUSES",
         visible: true,
-        sortOrder: 10,
+        sortOrder: 12,
         entries: [],
         createdAt: now,
         updatedAt: now
@@ -270,7 +294,7 @@ export function buildSeedDatabase(): Database {
         subtitle: "Karya dan tautan pilihan",
         kind: "FEATURED",
         visible: true,
-        sortOrder: 11,
+        sortOrder: 13,
         entries: [],
         createdAt: now,
         updatedAt: now
@@ -282,7 +306,7 @@ export function buildSeedDatabase(): Database {
         subtitle: "Catatan dan unggahan terbaru",
         kind: "ACTIVITY",
         visible: true,
-        sortOrder: 12,
+        sortOrder: 14,
         entries: [],
         createdAt: now,
         updatedAt: now
@@ -294,7 +318,7 @@ export function buildSeedDatabase(): Database {
         subtitle: "Topik, organisasi, dan tokoh yang diikuti",
         kind: "INTERESTS",
         visible: true,
-        sortOrder: 13,
+        sortOrder: 15,
         entries: [],
         createdAt: now,
         updatedAt: now
@@ -306,7 +330,7 @@ export function buildSeedDatabase(): Database {
         subtitle: "Jasa yang dapat dipesan",
         kind: "SERVICES",
         visible: true,
-        sortOrder: 14,
+        sortOrder: 16,
         entries: [],
         createdAt: now,
         updatedAt: now
@@ -318,7 +342,7 @@ export function buildSeedDatabase(): Database {
         subtitle: "Kata orang lain tentang kerja sama",
         kind: "RECOMMENDATIONS",
         visible: true,
-        sortOrder: 15,
+        sortOrder: 17,
         entries: [],
         createdAt: now,
         updatedAt: now

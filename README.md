@@ -26,7 +26,7 @@ Field kosong sengaja dibiarkan agar tidak mengarang data. NIM, GitHub, dan catat
 - **8 keahlian** desain: Adobe Illustrator, Adobe Premiere Pro, CorelDRAW, Desain Logo, Graphic Design, Komunikasi, Adobe Photoshop, After Effects.
 - **4 artikel** berstatus `DRAFT` (tidak tampil di `/catatan-lab` sampai diterbitkan).
 - **0 sertifikasi** dan **0 rekomendasi** karena tidak tercantum di profil sumber.
-- **15 bagian profil** ala LinkedIn: Pendidikan (terisi UIN), Bahasa, Organisasi, Penghargaan, Publikasi, Paten, Skor Tes, Pengalaman Relawan, Proyek, Kepedulian, Sorotan, Aktivitas, Minat, Layanan, dan Rekomendasi. Empat belas bagian lain sengaja kosong untuk diisi sendiri.
+- **17 bagian profil** ala LinkedIn: Pendidikan (terisi UIN), Mata Kuliah, Bahasa, Organisasi, Penghargaan, Publikasi, Paten, Skor Tes, Pengalaman Relawan, Proyek, Jeda Karier, Kepedulian, Sorotan, Aktivitas, Minat, Layanan, dan Rekomendasi. Enam belas bagian lain sengaja kosong untuk diisi sendiri.
 - **0 tautan media sosial** dan **0 aset media** — keduanya diisi sendiri lewat Studio.
 - **2 pesan** di Kotak Masuk. Log audit terus bertambah setiap mutasi dan sengaja tidak dibatasi.
 
@@ -135,7 +135,33 @@ Kolom `fieldOfStudy` dan `notes` hanya muncul pada jenis bagian yang memilikinya
 
 ### Bagian Profil ala LinkedIn
 
-Modul **Bagian Profil** memetakan seluruh bagian profil LinkedIn ke satu model data generik: `ProfileSection` (dengan `kind`) berisi `ProfileEntry`. Tujuh belas jenis bagian tersedia — Pendidikan, Mata Kuliah, Bahasa, Organisasi, Penghargaan, Publikasi, Paten, Skor Tes, Pengalaman Relawan, **Proyek**, Kepedulian, Minat, Sorotan, Aktivitas, Layanan, Rekomendasi, dan Bagian Kustom — masing-masing dengan label kolom sendiri (`PROFILE_ENTRY_LABELS`) dan tata letak publik otomatis (`PROFILE_SECTION_LAYOUT`: linimasa, daftar, kartu, atau unggahan).
+Modul **Bagian Profil** memetakan seluruh bagian profil LinkedIn ke satu model data generik: `ProfileSection` (dengan `kind`) berisi `ProfileEntry`. **Tujuh belas jenis bagian** tersedia, mengikuti daftar resmi tombol *Add profile section* LinkedIn, masing-masing dengan label kolom sendiri (`PROFILE_ENTRY_LABELS`) dan tata letak publik otomatis (`PROFILE_SECTION_LAYOUT`: linimasa, daftar, kartu, atau unggahan).
+
+Daftar resmi LinkedIn dan padanannya di sini:
+
+| Kelompok LinkedIn | Bagian | Jenis di proyek |
+| --- | --- | --- |
+| **Core** | About | Bio pada Konfigurasi Situs |
+| | Education | `EDUCATION` — Pendidikan |
+| | Position | `Experience` — Pengalaman (modul 03) |
+| | Services | `SERVICES` — Layanan |
+| | Career break | `CAREER_BREAK` — Jeda Karier |
+| | Skills | `Skill` — Keahlian (modul 05) |
+| **Recommended** | Featured | `FEATURED` — Sorotan |
+| | Licenses & certifications | `Certification` — Sertifikasi (modul 03) |
+| | Projects | `PROJECTS` — Proyek |
+| | Courses | `COURSES` — Mata Kuliah |
+| | Recommendations | `Testimonial` — Rekomendasi (modul 07) |
+| **Additional** | Volunteer experience | `VOLUNTEER` — Pengalaman Relawan |
+| | Publications | `PUBLICATIONS` — Publikasi |
+| | Patents | `PATENTS` — Paten |
+| | Honors & awards | `HONORS` — Penghargaan |
+| | Test scores | `TEST_SCORES` — Skor Tes |
+| | Languages | `LANGUAGES` — Bahasa |
+| | Organizations | `ORGANIZATIONS` — Organisasi |
+| | Causes | `CAUSES` — Kepedulian |
+
+Selain itu ada `INTERESTS` (Minat), `ACTIVITY` (Aktivitas), dan `CUSTOM` (Bagian Kustom) sebagai pelengkap — LinkedIn menampilkannya otomatis dari aktivitas akun, sedangkan di sini dapat diisi manual.
 
 Setiap bagian maupun entri dapat diubah judulnya, digeser naik/turun, disembunyikan dari halaman publik, atau dihapus permanen. Seluruh aksi ditulis ke log audit sebagai `CREATE`, `UPDATE`, `REORDER`, atau `PURGE`.
 
@@ -193,7 +219,7 @@ Penambahan `profileSections` pada basis data live juga dicadangkan otomatis ke `
 
 ### Perilaku Reset
 
-**Reset Basis Data** memuat ulang data pabrik dari `src/server/db/seed.ts`. Seed tersebut kini berisi **baseline profil desain**: 2 pengalaman TVRI, 8 keahlian desain, 14 bagian profil (hanya Pendidikan yang terisi), tanpa proyek, artikel, sertifikasi, rekomendasi, tautan media sosial, atau aset media. NIM, GitHub, telepon, situs, alamat, dan foto dibiarkan kosong agar tidak mengarang data.
+**Reset Basis Data** memuat ulang data pabrik dari `src/server/db/seed.ts`. Seed tersebut kini berisi **baseline profil desain**: 2 pengalaman TVRI, 8 keahlian desain, 17 bagian profil (hanya Pendidikan yang terisi), tanpa proyek, artikel, sertifikasi, rekomendasi, tautan media sosial, atau aset media. NIM, GitHub, telepon, situs, alamat, dan foto dibiarkan kosong agar tidak mengarang data.
 
 Reset mencatat aksi `RESET` pada log audit.
 
@@ -218,9 +244,12 @@ Skrip ini idempoten: koleksi dan kolom yang sudah ada tidak ditimpa, dan bagian 
 | `node scripts/e2e-media-social.cjs` | Uji end-to-end media, media sosial, dan entri profil (server harus berjalan) |
 | `node scripts/e2e-linkedin-parity.cjs` | Uji kesetaraan LinkedIn: Proyek, keahlian unggulan, rekomendasi berfoto |
 | `node scripts/e2e-linkedin-depth.cjs` | Uji kedalaman struktur 7 bagian vs akar skema LinkedIn (tanggal terstruktur, bidang studi, catatan, posisi penghargaan) |
+| `node scripts/e2e-career-break.cjs` | Uji bagian Jeda Karier dan kelengkapan 17 jenis bagian LinkedIn |
 | `node scripts/migrate-media-social.cjs` | Migrasi basis data live ke skema media & sosial |
 | `node scripts/migrate-linkedin-parity.cjs` | Migrasi basis data live: bagian Proyek, foto/tautan rekomendasi, keahlian unggulan |
 | `node scripts/migrate-linkedin-depth.cjs` | Migrasi basis data live: tanggal terstruktur pengalaman, bidang studi, catatan entri |
+| `node scripts/migrate-career-break.cjs` | Migrasi basis data live: bagian Jeda Karier |
+| `node scripts/migrate-courses.cjs` | Migrasi basis data live: bagian Mata Kuliah + urutan resmi |
 
 ## Catatan Desain
 
@@ -234,7 +263,7 @@ Skrip ini idempoten: koleksi dan kolom yang sudah ada tidak ditimpa, dan bagian 
 1. Isi **NIM / ID**, **tautan GitHub**, **telepon**, **situs web**, **alamat**, serta **foto profil/sampul** (unggah langsung, bukan URL) melalui Studio → Konfigurasi.
 2. Tambahkan **tautan media sosial** asli (Instagram, Behance, LinkedIn, dst.) lewat Studio → Media & Sosial agar pengunjung dapat menjangkau akun sebenarnya.
 3. Sesuaikan **tingkat keahlian** agar tidak menyisakan placeholder `75`, lalu tambahkan jumlah dukungan bila ada.
-4. Lengkapi **14 bagian profil** yang masih kosong (Bahasa, Organisasi, Penghargaan, Publikasi, Paten, Skor Tes, Relawan, Proyek, Kepedulian, Sorotan, Aktivitas, Minat, Layanan, Rekomendasi) lewat Studio → Bagian Profil. Unggah **logo institusi** pada Pendidikan, dan **tautan langsung** pada setiap Publikasi/Paten.
+4. Lengkapi **16 bagian profil** yang masih kosong (Mata Kuliah, Bahasa, Organisasi, Penghargaan, Publikasi, Paten, Skor Tes, Relawan, Proyek, Jeda Karier, Kepedulian, Sorotan, Aktivitas, Minat, Layanan, Rekomendasi) lewat Studio → Bagian Profil. Unggah **logo institusi** pada Pendidikan, dan **tautan langsung** pada setiap Publikasi/Paten.
 5. Unggah **logo instansi** pada pengalaman kerja dan **foto sertifikat** pada sertifikasi lewat Studio → Rekam Jejak.
 6. Tambahkan **karya desain** dan **artikel** asli lewat Studio agar katalog serta jurnal terisi.
 7. Pulihkan atau hapus permanen 6 proyek lama di Tempat Sampah setelah dipastikan tidak diperlukan.

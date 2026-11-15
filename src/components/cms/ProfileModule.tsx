@@ -14,6 +14,8 @@ import {
   type ProfileSectionInput
 } from "@/contracts/profile.contract";
 import {
+  CAREER_BREAK_TYPES,
+  CAREER_BREAK_TYPE_LABELS,
   PROFILE_ENTRY_LABELS,
   PROFILE_SECTION_KINDS,
   PROFILE_SECTION_KIND_LABELS,
@@ -292,14 +294,37 @@ function EntryForm({
       ) : null}
 
       {labels.meta ? (
-        <Field label={labels.meta} htmlFor="pre-meta" error={errors.meta}>
-          <input
-            id="pre-meta"
-            className="input mono"
-            value={meta}
-            onChange={(event) => setMeta(event.target.value)}
-          />
-        </Field>
+        section.kind === "CAREER_BREAK" ? (
+          <Field
+            label={labels.meta}
+            htmlFor="pre-meta"
+            error={errors.meta}
+            hint="opsional, boleh dikosongkan"
+          >
+            <select
+              id="pre-meta"
+              className="select"
+              value={meta}
+              onChange={(event) => setMeta(event.target.value)}
+            >
+              <option value="">— Tidak disebutkan —</option>
+              {CAREER_BREAK_TYPES.map((option) => (
+                <option key={option} value={CAREER_BREAK_TYPE_LABELS[option]}>
+                  {CAREER_BREAK_TYPE_LABELS[option]}
+                </option>
+              ))}
+            </select>
+          </Field>
+        ) : (
+          <Field label={labels.meta} htmlFor="pre-meta" error={errors.meta}>
+            <input
+              id="pre-meta"
+              className="input mono"
+              value={meta}
+              onChange={(event) => setMeta(event.target.value)}
+            />
+          </Field>
+        )
       ) : null}
 
       {labels.showDates ? (
