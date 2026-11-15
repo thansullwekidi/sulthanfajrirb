@@ -7,6 +7,7 @@ import { Icon } from "@/components/ui/Icon";
 import {
   CATEGORY_LABELS,
   CATEGORY_CODES,
+  resolveEducation,
   type Project,
   type Skill,
   type SkillDomain,
@@ -19,6 +20,7 @@ import {
   listSkills,
   listTestimonials
 } from "@/server/repositories/content.repository";
+import { listProfileSections } from "@/server/repositories/profile.repository";
 import {
   listFeaturedProjects,
   listAllProjects,
@@ -117,17 +119,29 @@ function SkillDomainCell({ domain, skills }: { domain: SkillDomain; skills: Skil
 }
 
 export default async function OverviewPage() {
-  const [config, projects, allProjects, featured, articles, skills, testimonials, socialLinks] =
-    await Promise.all([
-      getSiteConfig(),
-      listPublishedProjects(),
-      listAllProjects(),
-      listFeaturedProjects(),
-      listArticles(true),
-      listSkills(),
-      listTestimonials(),
-      listSocialLinks(true)
-    ]);
+  const [
+    config,
+    projects,
+    allProjects,
+    featured,
+    articles,
+    skills,
+    testimonials,
+    socialLinks,
+    profileSections
+  ] = await Promise.all([
+    getSiteConfig(),
+    listPublishedProjects(),
+    listAllProjects(),
+    listFeaturedProjects(),
+    listArticles(true),
+    listSkills(),
+    listTestimonials(),
+    listSocialLinks(true),
+    listProfileSections(true)
+  ]);
+
+  const education = resolveEducation(profileSections, config.education);
 
   const verifiedMetrics = projects.filter((project) => project.metricValue.trim().length > 0).length;
   const pinnedSkills = skills.filter((skill) => skill.pinned);
@@ -243,7 +257,11 @@ export default async function OverviewPage() {
             </div>
             <div className="meta-row">
               <dt>Pendidikan</dt>
-              <dd>{config.education}</dd>
+              <dd>
+                {education.length > 0
+                  ? education.map((item) => item.school).join(" · ")
+                  : config.education}
+              </dd>
             </div>
             <div className="meta-row">
               <dt>Surel</dt>

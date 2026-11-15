@@ -3,6 +3,7 @@ import {
   EMPLOYMENT_TYPE_LABELS,
   WORK_MODE_LABELS,
   type Certification,
+  type EducationLine,
   type Experience,
   type Project,
   type SiteConfig,
@@ -13,12 +14,13 @@ import { formatDateId } from "./primitives";
 /** Generator dokumen CV ATS 1 halaman dalam format Markdown polos. */
 export function buildAtsMarkdown(input: {
   config: SiteConfig;
+  education: EducationLine[];
   experiences: Experience[];
   projects: Project[];
   certifications: Certification[];
   skills: Skill[];
 }): string {
-  const { config, experiences, projects, certifications, skills } = input;
+  const { config, education, experiences, projects, certifications, skills } = input;
   const lines: string[] = [];
 
   lines.push(`# ${config.fullName}`);
@@ -72,10 +74,22 @@ export function buildAtsMarkdown(input: {
     }
   }
 
-  lines.push("## Pendidikan");
-  lines.push(config.education);
-  if (config.nim) lines.push(`NIM ${config.nim}`);
-  lines.push("");
+  if (education.length > 0) {
+    lines.push("## Pendidikan");
+    for (const item of education) {
+      const heading = [item.school, item.degree, item.fieldOfStudy]
+        .filter(Boolean)
+        .join(" — ");
+      lines.push(`### ${heading}`);
+      const meta = [item.period, item.location, item.grade].filter(Boolean).join(" · ");
+      if (meta) lines.push(meta);
+      if (item.notes) lines.push(`- ${item.notes}`);
+      if (item.description) lines.push(`- ${item.description}`);
+      lines.push("");
+    }
+    if (config.nim) lines.push(`NIM ${config.nim}`);
+    lines.push("");
+  }
 
   if (certifications.length > 0) {
     lines.push("## Sertifikasi");

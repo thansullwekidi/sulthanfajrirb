@@ -1,5 +1,6 @@
 import type {
   Certification,
+  EducationLine,
   Experience,
   Project,
   SiteConfig,
@@ -14,6 +15,7 @@ import { formatDateId, formatPeriod } from "@/contracts/primitives";
 
 interface ResumeProps {
   config: SiteConfig;
+  education: EducationLine[];
   experiences: Experience[];
   projects: Project[];
   certifications: Certification[];
@@ -26,6 +28,7 @@ interface ResumeProps {
  */
 export function PrintableAtsResume({
   config,
+  education,
   experiences,
   projects,
   certifications,
@@ -115,12 +118,28 @@ export function PrintableAtsResume({
 
       <section className="cv-section">
         <h2 className="cv-section__title">Pendidikan</h2>
-        <div className="cv-entry">
-          <div className="cv-entry__head">
-            <span className="cv-entry__title">{config.education}</span>
-            {config.nim ? <span className="cv-entry__meta">NIM {config.nim}</span> : null}
+        {education.map((item) => (
+          <div key={item.id} className="cv-entry">
+            <div className="cv-entry__head">
+              <span className="cv-entry__title">
+                {item.school}
+                {item.degree ? ` — ${item.degree}` : ""}
+                {item.fieldOfStudy ? `, ${item.fieldOfStudy}` : ""}
+              </span>
+              <span className="cv-entry__meta">
+                {[item.period, item.grade].filter(Boolean).join(" · ")}
+              </span>
+            </div>
+            {item.location || item.notes ? (
+              <span className="cv-entry__sub">
+                {[item.location, item.notes].filter(Boolean).join(" · ")}
+              </span>
+            ) : null}
+            {config.nim && item.school === config.education ? (
+              <span className="cv-entry__meta">NIM {config.nim}</span>
+            ) : null}
           </div>
-        </div>
+        ))}
       </section>
 
       {certifications.length > 0 ? (

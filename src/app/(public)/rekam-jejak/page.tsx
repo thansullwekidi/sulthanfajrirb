@@ -9,7 +9,8 @@ import {
   EMPLOYMENT_TYPE_LABELS,
   EXPERIENCE_TYPE_LABELS,
   SKILL_DOMAINS,
-  WORK_MODE_LABELS
+  WORK_MODE_LABELS,
+  resolveEducation
 } from "@/contracts/domain";
 import { formatDateId, formatPeriod } from "@/contracts/primitives";
 import { getSiteConfig } from "@/server/repositories/config.repository";
@@ -41,6 +42,8 @@ export default async function TrajectoryPage() {
       listProfileSections(true),
       listSocialLinks(true)
     ]);
+
+  const education = resolveEducation(profileSections, config.education);
 
   return (
     <div className="shell">
@@ -80,7 +83,7 @@ export default async function TrajectoryPage() {
               penerbit serta ID kredensial yang dapat diverifikasi bila tautan tersedia.
             </p>
             <div className="mono" style={{ fontSize: 9.5, color: "var(--muted)" }}>
-              {config.education}
+              {education.map((item) => item.school).join(" · ") || config.education}
             </div>
             {socialLinks.length > 0 ? <SocialLinks links={socialLinks} /> : null}
           </div>

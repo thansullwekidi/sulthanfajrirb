@@ -1,4 +1,5 @@
 import { buildAtsMarkdown } from "@/contracts/ats-markdown";
+import { resolveEducation } from "@/contracts/domain";
 import { CvToolbar } from "@/components/editorial/CvToolbar";
 import { PrintableAtsResume } from "@/components/editorial/PrintableAtsResume";
 import { Icon } from "@/components/ui/Icon";
@@ -8,6 +9,7 @@ import {
   listExperiences,
   listSkills
 } from "@/server/repositories/content.repository";
+import { listProfileSections } from "@/server/repositories/profile.repository";
 import { listPublishedProjects } from "@/server/repositories/project.repository";
 
 export const dynamic = "force-dynamic";
@@ -19,13 +21,17 @@ export const metadata = {
 };
 
 export default async function ResumePage() {
-  const [config, experiences, projects, certifications, skills] = await Promise.all([
-    getSiteConfig(),
-    listExperiences(),
-    listPublishedProjects(),
-    listCertifications(),
-    listSkills()
-  ]);
+  const [config, experiences, projects, certifications, skills, profileSections] =
+    await Promise.all([
+      getSiteConfig(),
+      listExperiences(),
+      listPublishedProjects(),
+      listCertifications(),
+      listSkills(),
+      listProfileSections(true)
+    ]);
+
+  const education = resolveEducation(profileSections, config.education);
 
   const featured = [...projects]
     .sort((a, b) => Number(b.isFeatured) - Number(a.isFeatured))
@@ -35,6 +41,7 @@ export default async function ResumePage() {
 
   const markdown = buildAtsMarkdown({
     config,
+    education,
     experiences: topExperiences,
     projects: featured,
     certifications: topCertifications,
@@ -63,6 +70,7 @@ export default async function ResumePage() {
       <div className="cv-stage">
         <PrintableAtsResume
           config={config}
+          education={education}
           experiences={topExperiences}
           projects={featured}
           certifications={topCertifications}

@@ -119,6 +119,9 @@ const EXP_BASE = {
   console.log("\n== PENDIDIKAN: BIDANG STUDI & CATATAN (EDUCATION) ==");
   snap = await snapshot();
   const edu = sectionByKind(snap, "EDUCATION");
+  // Jumlah awal dicatat, bukan diasumsikan. Data nyata bisa bertambah kapan
+  // saja lewat Studio, dan uji tidak boleh gagal hanya karena itu.
+  const eduBaseline = edu.entries.length;
   const eduEntry = await call("POST", "/api/v1/profile", {
     action: "entry.create",
     sectionId: edu.id,
@@ -294,9 +297,9 @@ const EXP_BASE = {
   snap = await snapshot();
   check("pengalaman kembali 2", snap.database.experiences.length === 2, String(snap.database.experiences.length));
   check(
-    "pendidikan kembali 1 entri",
-    sectionByKind(snap, "EDUCATION").entries.length === 1,
-    String(sectionByKind(snap, "EDUCATION").entries.length)
+    "pendidikan kembali ke jumlah awal",
+    sectionByKind(snap, "EDUCATION").entries.length === eduBaseline,
+    `${sectionByKind(snap, "EDUCATION").entries.length} vs awal ${eduBaseline}`
   );
   check("penghargaan bersih", sectionByKind(snap, "HONORS").entries.length === 0);
   check("publikasi bersih", sectionByKind(snap, "PUBLICATIONS").entries.length === 0);

@@ -3,6 +3,8 @@
  * Tidak ada union string yang ditulis ulang di komponen UI.
  */
 
+import { formatPeriod } from "./primitives";
+
 export const PROJECT_CATEGORIES = [
   "REKAYASA_WEB",
   "MACHINE_LEARNING",
@@ -857,6 +859,75 @@ export interface AuditLog {
   entitySlug: string;
   commitHash: string;
   summary: string;
+}
+
+/**
+ * Satu baris pendidikan siap tampil. Bagian profil `EDUCATION` adalah sumber
+ * kebenaran; `SiteConfig.education` hanya dipakai sebagai cadangan untuk data
+ * lama yang belum punya entri profil.
+ */
+export interface EducationLine {
+  id: string;
+  school: string;
+  degree: string;
+  fieldOfStudy: string;
+  location: string;
+  period: string;
+  grade: string;
+  notes: string;
+  description: string;
+  logoUrl: string;
+  url: string;
+}
+
+/**
+ * Susun daftar pendidikan dari bagian profil, dengan cadangan teks tunggal
+ * pada Konfigurasi. Dipakai beranda, halaman rekam jejak, CV cetak, dan
+ * ekspor Markdown agar keempatnya tidak pernah berbeda sumber.
+ */
+export function resolveEducation(
+  sections: ProfileSection[],
+  fallback: string
+): EducationLine[] {
+  const section = sections.find((item) => item.kind === "EDUCATION");
+  const entries = (section?.entries ?? [])
+    .filter((entry) => entry.visible)
+    .sort((a, b) => a.sortOrder - b.sortOrder);
+
+  if (entries.length === 0) {
+    const text = fallback.trim();
+    return text
+      ? [
+          {
+            id: "config-education",
+            school: text,
+            degree: "",
+            fieldOfStudy: "",
+            location: "",
+            period: "",
+            grade: "",
+            notes: "",
+            description: "",
+            logoUrl: "",
+            url: ""
+          }
+        ]
+      : [];
+  }
+
+  return entries.map((entry) => ({
+    id: entry.id,
+    school: entry.title,
+    degree: entry.subtitle,
+    fieldOfStudy: entry.fieldOfStudy,
+    location: entry.location,
+    period: formatPeriod(entry.startDate, entry.endDate, entry.isCurrent),
+    grade: entry.meta,
+    notes: entry.notes,
+    description: entry.description,
+    logoUrl: entry.logoUrl,
+    url: entry.url
+  }));
 }
 
 export interface Database {
