@@ -110,7 +110,7 @@ Karena katalog dan jurnal masih kosong, `/karya` dan `/catatan-lab` menampilkan 
 7. Rekomendasi (`#rekomendasi`) — testimoni dengan hubungan kerja dan sakelar tampil
 8. Kotak Masuk (`#kotak-masuk`) — status baca, balas, hapus
 10. Media & Sosial (`#media-sosial`) — CRUD tautan media sosial (18 platform) dan pustaka media
-11. Konfigurasi (`#konfigurasi`) — identitas global (telepon, situs, alamat, unggah foto profil/sampul, kata ganti, koneksi, pengikut, Open to Work), ekspor/impor JSON, reset
+11. Konfigurasi (`#konfigurasi`) — identitas global (telepon, situs, alamat, unggah foto profil/sampul, kata ganti, koneksi, pengikut, Open to Work, batas entri CV ATS), ekspor/impor JSON, reset
 12. Log Audit (`#audit`) — filter dan pencarian jejak mutasi
 
 Palet perintah dapat dibuka dengan `Ctrl+K` / `Cmd+K` dari halaman mana pun.
@@ -266,6 +266,8 @@ Skrip ini idempoten: koleksi dan kolom yang sudah ada tidak ditimpa, dan bagian 
 | `node scripts/e2e-career-break.cjs` | Uji bagian Jeda Karier dan kelengkapan 17 jenis bagian LinkedIn |
 | `node scripts/e2e-studio-badge.cjs` | Uji kejujuran badge sidebar Studio dan konsistensi data dengan halaman publik |
 | `node scripts/e2e-integrasi-studio-web.cjs` | Uji integrasi menyeluruh: setiap data Studio wajib muncul di halaman publik yang tepat |
+| `node scripts/e2e-cv-limits.cjs` | Uji batas entri CV ATS yang dapat diatur lewat Konfigurasi |
+| `node scripts/migrate-cv-limits.cjs` | Migrasi basis data live: tambah field batas entri CV (default 3) |
 | `node scripts/migrate-media-social.cjs` | Migrasi basis data live ke skema media & sosial |
 | `node scripts/migrate-linkedin-parity.cjs` | Migrasi basis data live: bagian Proyek, foto/tautan rekomendasi, keahlian unggulan |
 | `node scripts/migrate-linkedin-depth.cjs` | Migrasi basis data live: tanggal terstruktur pengalaman, bidang studi, catatan entri |

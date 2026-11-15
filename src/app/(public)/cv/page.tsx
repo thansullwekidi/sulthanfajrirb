@@ -33,11 +33,15 @@ export default async function ResumePage() {
 
   const education = resolveEducation(profileSections, config.education);
 
+  const maxExp = config.cvMaxExperiences ?? 3;
+  const maxProj = config.cvMaxProjects ?? 3;
+  const maxCert = config.cvMaxCertifications ?? 3;
+
   const featured = [...projects]
     .sort((a, b) => Number(b.isFeatured) - Number(a.isFeatured))
-    .slice(0, 3);
-  const topExperiences = [...experiences].slice(0, 3);
-  const topCertifications = certifications.slice(0, 3);
+    .slice(0, maxProj);
+  const topExperiences = [...experiences].slice(0, maxExp);
+  const topCertifications = certifications.slice(0, maxCert);
 
   const markdown = buildAtsMarkdown({
     config,

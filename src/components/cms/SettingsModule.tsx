@@ -59,6 +59,9 @@ export function SettingsModule({ config }: { config: SiteConfig }) {
   const [openToWork, setOpenToWork] = useState(config.openToWork);
   const [openToWorkNote, setOpenToWorkNote] = useState(config.openToWorkNote);
   const [cvVersion, setCvVersion] = useState(config.cvVersion);
+  const [cvMaxExperiences, setCvMaxExperiences] = useState(config.cvMaxExperiences);
+  const [cvMaxProjects, setCvMaxProjects] = useState(config.cvMaxProjects);
+  const [cvMaxCertifications, setCvMaxCertifications] = useState(config.cvMaxCertifications);
   const [education, setEducation] = useState(config.education);
 
   const [localErrors, setLocalErrors] = useState<Record<string, string>>({});
@@ -91,6 +94,9 @@ export function SettingsModule({ config }: { config: SiteConfig }) {
     setOpenToWork(config.openToWork);
     setOpenToWorkNote(config.openToWorkNote);
     setCvVersion(config.cvVersion);
+    setCvMaxExperiences(config.cvMaxExperiences);
+    setCvMaxProjects(config.cvMaxProjects);
+    setCvMaxCertifications(config.cvMaxCertifications);
     setEducation(config.education);
   }, [config]);
 
@@ -122,6 +128,9 @@ export function SettingsModule({ config }: { config: SiteConfig }) {
       openToWork,
       openToWorkNote,
       cvVersion,
+      cvMaxExperiences,
+      cvMaxProjects,
+      cvMaxCertifications,
       education
     });
 
@@ -443,6 +452,57 @@ export function SettingsModule({ config }: { config: SiteConfig }) {
                   className="input"
                   value={availabilityNote}
                   onChange={(event) => setAvailabilityNote(event.target.value)}
+                />
+              </Field>
+            </div>
+
+            <div className="form-row-3">
+              <Field
+                label="Batas Pengalaman CV"
+                htmlFor="cfg-cv-max-exp"
+                error={errors.cvMaxExperiences}
+                hint="jumlah entri di CV ATS"
+              >
+                <input
+                  id="cfg-cv-max-exp"
+                  className="input mono"
+                  type="number"
+                  min={0}
+                  max={20}
+                  value={cvMaxExperiences}
+                  onChange={(event) => setCvMaxExperiences(Number(event.target.value))}
+                />
+              </Field>
+              <Field
+                label="Batas Proyek CV"
+                htmlFor="cfg-cv-max-proj"
+                error={errors.cvMaxProjects}
+                hint="jumlah entri di CV ATS"
+              >
+                <input
+                  id="cfg-cv-max-proj"
+                  className="input mono"
+                  type="number"
+                  min={0}
+                  max={20}
+                  value={cvMaxProjects}
+                  onChange={(event) => setCvMaxProjects(Number(event.target.value))}
+                />
+              </Field>
+              <Field
+                label="Batas Sertifikasi CV"
+                htmlFor="cfg-cv-max-cert"
+                error={errors.cvMaxCertifications}
+                hint="jumlah entri di CV ATS"
+              >
+                <input
+                  id="cfg-cv-max-cert"
+                  className="input mono"
+                  type="number"
+                  min={0}
+                  max={20}
+                  value={cvMaxCertifications}
+                  onChange={(event) => setCvMaxCertifications(Number(event.target.value))}
                 />
               </Field>
             </div>

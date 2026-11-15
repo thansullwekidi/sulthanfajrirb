@@ -58,15 +58,17 @@ export async function SiteFooter() {
                 GitHub
               </a>
             ) : null}
-            <a
-              href={config.linkedin}
-              className="footer-link"
-              target="_blank"
-              rel="noreferrer noopener"
-            >
-              <Icon name="linkedin" size={12} />
-              LinkedIn
-            </a>
+            {config.linkedin ? (
+              <a
+                href={config.linkedin}
+                className="footer-link"
+                target="_blank"
+                rel="noreferrer noopener"
+              >
+                <Icon name="linkedin" size={12} />
+                LinkedIn
+              </a>
+            ) : null}
             <Link href="/admin" className="footer-link">
               <Icon name="lock" size={12} />
               Studio CMS

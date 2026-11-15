@@ -847,6 +847,9 @@ export interface SiteConfig {
   openToWork: boolean;
   openToWorkNote: string;
   cvVersion: string;
+  cvMaxExperiences: number;
+  cvMaxProjects: number;
+  cvMaxCertifications: number;
   education: string;
   updatedAt: string;
 }

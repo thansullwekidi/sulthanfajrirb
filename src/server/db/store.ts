@@ -103,7 +103,19 @@ function coerceDatabase(input: unknown): Database {
     schemaVersion: 1,
     siteConfig: {
       ...seed.siteConfig,
-      ...(typeof raw.siteConfig === "object" && raw.siteConfig !== null ? raw.siteConfig : {})
+      ...(typeof raw.siteConfig === "object" && raw.siteConfig !== null ? raw.siteConfig : {}),
+      cvMaxExperiences:
+        typeof raw.siteConfig?.cvMaxExperiences === "number"
+          ? raw.siteConfig.cvMaxExperiences
+          : seed.siteConfig.cvMaxExperiences,
+      cvMaxProjects:
+        typeof raw.siteConfig?.cvMaxProjects === "number"
+          ? raw.siteConfig.cvMaxProjects
+          : seed.siteConfig.cvMaxProjects,
+      cvMaxCertifications:
+        typeof raw.siteConfig?.cvMaxCertifications === "number"
+          ? raw.siteConfig.cvMaxCertifications
+          : seed.siteConfig.cvMaxCertifications
     },
     projects: array(raw.projects, seed.projects),
     experiences: array(raw.experiences, seed.experiences).map((experience) => ({
@@ -169,7 +181,8 @@ async function readUnsafe(): Promise<Database> {
   try {
     await fs.mkdir(path.dirname(DB_FILE), { recursive: true });
     const raw = await fs.readFile(DB_FILE, "utf8");
-    const parsed = coerceDatabase(JSON.parse(raw) as unknown);
+    const clean = raw.replace(/^\uFEFF/, "");
+    const parsed = coerceDatabase(JSON.parse(clean) as unknown);
     runtime.cache = parsed;
     return parsed;
   } catch (error) {

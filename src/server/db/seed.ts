@@ -31,6 +31,9 @@ export function buildSeedDatabase(): Database {
       openToWork: false,
       openToWorkNote: "",
       cvVersion: "2026.2",
+      cvMaxExperiences: 3,
+      cvMaxProjects: 3,
+      cvMaxCertifications: 3,
       education: "UIN Sultan Maulana Hasanuddin Banten",
       updatedAt: now
     },

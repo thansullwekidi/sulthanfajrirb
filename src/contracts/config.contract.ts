@@ -33,6 +33,24 @@ export const siteConfigInputSchema = z.object({
   openToWork: z.boolean().default(false),
   openToWorkNote: z.string().trim().max(200, "Catatan peluang terlalu panjang.").default(""),
   cvVersion: z.string().trim().max(30, "Versi CV terlalu panjang.").default("2026.2"),
+  cvMaxExperiences: z.coerce
+    .number({ invalid_type_error: "Harus berupa angka." })
+    .int("Harus bilangan bulat.")
+    .min(0, "Tidak boleh negatif.")
+    .max(20, "Maksimal 20.")
+    .default(3),
+  cvMaxProjects: z.coerce
+    .number({ invalid_type_error: "Harus berupa angka." })
+    .int("Harus bilangan bulat.")
+    .min(0, "Tidak boleh negatif.")
+    .max(20, "Maksimal 20.")
+    .default(3),
+  cvMaxCertifications: z.coerce
+    .number({ invalid_type_error: "Harus berupa angka." })
+    .int("Harus bilangan bulat.")
+    .min(0, "Tidak boleh negatif.")
+    .max(20, "Maksimal 20.")
+    .default(3),
   education: z.string().trim().max(180, "Pendidikan terlalu panjang.").default("")
 });
 

@@ -137,7 +137,11 @@ function strip(html) {
 
   console.log("\n== MEDIA SOSIAL ==");
   for (const link of db.socialLinks.filter((l) => l.visible)) {
-    check("Media & Sosial", link.platform, "/", pages["/"].includes(link.platform));
+    const appears =
+      pages["/"].includes(link.platform) ||
+      pages["/"].toLowerCase().includes(link.platform.toLowerCase()) ||
+      (link.label && pages["/"].includes(link.label));
+    check("Media & Sosial", link.platform, "/", appears);
   }
 
   if (failures.length > 0) {

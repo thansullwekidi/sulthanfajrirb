@@ -61,6 +61,8 @@ async function snapshot() {
 
   console.log("\n== BAGIAN PROYEK ==");
   let snap = await snapshot();
+  const tstBaseline = snap.database.testimonials.length;
+  const skillsBaseline = snap.database.skills.length;
   const projectsSection = snap.database.profileSections.find((s) => s.kind === "PROJECTS");
   check("bagian Proyek tersedia", Boolean(projectsSection), "tidak ditemukan");
 
@@ -204,8 +206,8 @@ async function snapshot() {
   snap = await snapshot();
   check("bagian Proyek kembali kosong",
     snap.database.profileSections.find((s) => s.id === projectsSection.id).entries.length === 0);
-  check("rekomendasi bersih", snap.database.testimonials.length === 0);
-  check("keahlian kembali 8", snap.database.skills.length === 8, String(snap.database.skills.length));
+  check("rekomendasi bersih", snap.database.testimonials.length === tstBaseline);
+  check("keahlian kembali ke jumlah awal", snap.database.skills.length === skillsBaseline, String(snap.database.skills.length));
   check("media bersih", snap.database.mediaAssets.length === 0);
 
   console.log(`\nHASIL: ${pass} lolos, ${fail} gagal\n`);
