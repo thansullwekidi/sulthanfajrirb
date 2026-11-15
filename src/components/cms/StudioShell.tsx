@@ -50,9 +50,9 @@ const MODULES: ModuleDefinition[] = [
   { key: "jurnal", index: "06", label: "Jurnal Lab", icon: "book", hash: "#jurnal" },
   { key: "rekomendasi", index: "07", label: "Rekomendasi", icon: "star", hash: "#rekomendasi" },
   { key: "kotak-masuk", index: "08", label: "Kotak Masuk", icon: "mail", hash: "#kotak-masuk" },
-  { key: "media-sosial", index: "09", label: "Media & Sosial", icon: "spark", hash: "#media-sosial" },
-  { key: "konfigurasi", index: "10", label: "Konfigurasi", icon: "lock", hash: "#konfigurasi" },
-  { key: "audit", index: "11", label: "Log Audit", icon: "table", hash: "#audit" }
+  { key: "media-sosial", index: "10", label: "Media & Sosial", icon: "spark", hash: "#media-sosial" },
+  { key: "konfigurasi", index: "11", label: "Konfigurasi", icon: "lock", hash: "#konfigurasi" },
+  { key: "audit", index: "12", label: "Log Audit", icon: "table", hash: "#audit" }
 ];
 
 const MODULE_KEYS = new Set<string>(MODULES.map((module) => module.key));

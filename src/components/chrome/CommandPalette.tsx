@@ -29,9 +29,9 @@ const PALETTE_ITEMS: PaletteItem[] = [
   { id: "cms-jurnal", label: "Jurnal Lab", group: "Studio CMS", hint: "06", href: "/admin#jurnal", keywords: "artikel tulis" },
   { id: "cms-testimoni", label: "Rekomendasi", group: "Studio CMS", hint: "07", href: "/admin#rekomendasi", keywords: "testimoni endorsements" },
   { id: "cms-inbox", label: "Kotak Masuk", group: "Studio CMS", hint: "08", href: "/admin#kotak-masuk", keywords: "pesan inbox unread" },
-  { id: "cms-media", label: "Media & Media Sosial", group: "Studio CMS", hint: "09", href: "/admin#media-sosial", keywords: "instagram linkedin behance unggah gambar pustaka foto logo" },
-  { id: "cms-config", label: "Konfigurasi & Basis Data", group: "Studio CMS", hint: "10", href: "/admin#konfigurasi", keywords: "backup json import export reset identitas" },
-  { id: "cms-audit", label: "Log Audit Sistem", group: "Studio CMS", hint: "11", href: "/admin#audit", keywords: "riwayat mutasi" }
+  { id: "cms-media", label: "Media & Media Sosial", group: "Studio CMS", hint: "10", href: "/admin#media-sosial", keywords: "instagram linkedin behance unggah gambar pustaka foto logo" },
+  { id: "cms-config", label: "Konfigurasi & Basis Data", group: "Studio CMS", hint: "11", href: "/admin#konfigurasi", keywords: "backup json import export reset identitas" },
+  { id: "cms-audit", label: "Log Audit Sistem", group: "Studio CMS", hint: "12", href: "/admin#audit", keywords: "riwayat mutasi" }
 ];
 
 export function CommandPalette() {

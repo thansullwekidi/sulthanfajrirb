@@ -216,7 +216,7 @@ function ExperienceForm({
           id="exp-logo"
           label="Logo Institusi"
           hint="opsional, tampil di linimasa publik"
-          purpose="EDUCATION_LOGO"
+          purpose="ORGANIZATION_LOGO"
           value={logoUrl}
           onChange={setLogoUrl}
           error={errors.logoUrl}
@@ -482,7 +482,7 @@ function CertificationForm({
           id="cert-issuer-logo"
           label="Logo Penerbit"
           hint="opsional, tampil di samping nama penerbit"
-          purpose="EDUCATION_LOGO"
+          purpose="ORGANIZATION_LOGO"
           value={issuerLogoUrl}
           onChange={setIssuerLogoUrl}
           error={errors.issuerLogoUrl}

@@ -147,6 +147,7 @@ export const MEDIA_PURPOSES = [
   "COVER",
   "CERTIFICATION",
   "EDUCATION_LOGO",
+  "ORGANIZATION_LOGO",
   "PROFILE_ENTRY",
   "SOCIAL",
   "OTHER"
@@ -158,6 +159,7 @@ export const MEDIA_PURPOSE_LABELS: Record<MediaPurpose, string> = {
   COVER: "Foto Sampul",
   CERTIFICATION: "Foto Sertifikasi",
   EDUCATION_LOGO: "Logo Pendidikan",
+  ORGANIZATION_LOGO: "Logo Instansi",
   PROFILE_ENTRY: "Media Entri Profil",
   SOCIAL: "Media Sosial",
   OTHER: "Lainnya"

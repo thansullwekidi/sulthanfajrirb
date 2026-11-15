@@ -29,9 +29,13 @@ type DeleteTarget =
   | { kind: "entry"; sectionId: string; entryId: string; title: string };
 
 /** Tujuan penyimpanan media mengikuti jenis bagian agar audit mudah dibaca. */
+/**
+ * Tujuan penyimpanan media mengikuti jenis bagian agar audit mudah dibaca.
+ * Sampul publikasi/paten adalah media entri, bukan foto sertifikasi.
+ */
 function mediaPurposeFor(kind: ProfileSectionKind): MediaPurpose {
   if (kind === "EDUCATION") return "EDUCATION_LOGO";
-  if (kind === "PUBLICATIONS" || kind === "PATENTS") return "CERTIFICATION";
+  if (kind === "ORGANIZATIONS" || kind === "VOLUNTEER") return "ORGANIZATION_LOGO";
   return "PROFILE_ENTRY";
 }
 

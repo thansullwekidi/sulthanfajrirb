@@ -1,6 +1,6 @@
 # Design Dossier Sulthan — Portofolio & Studio CMS
 
-Portofolio desain grafis berbahasa Indonesia yang terhubung langsung dengan studio CMS headless. Seluruh konten publik dibaca dari satu basis data lokal, sementara studio admin menyediakan sebelas modul pengelolaan dengan validasi berlapis, jejak audit immutable, dan mekanisme hapus dua tahap.
+Portofolio desain grafis berbahasa Indonesia yang terhubung langsung dengan studio CMS headless. Seluruh konten publik dibaca dari satu basis data lokal, sementara studio admin menyediakan dua belas modul pengelolaan dengan validasi berlapis, jejak audit immutable, dan mekanisme hapus dua tahap.
 
 ## Profil Aktif
 
@@ -26,9 +26,9 @@ Field kosong sengaja dibiarkan agar tidak mengarang data. NIM, GitHub, dan catat
 - **8 keahlian** desain: Adobe Illustrator, Adobe Premiere Pro, CorelDRAW, Desain Logo, Graphic Design, Komunikasi, Adobe Photoshop, After Effects.
 - **4 artikel** berstatus `DRAFT` (tidak tampil di `/catatan-lab` sampai diterbitkan).
 - **0 sertifikasi** dan **0 rekomendasi** karena tidak tercantum di profil sumber.
-- **14 bagian profil** ala LinkedIn: Pendidikan (terisi UIN), Bahasa, Organisasi, Penghargaan, Publikasi, Paten, Skor Tes, Pengalaman Relawan, Kepedulian, Sorotan, Aktivitas, Minat, Layanan, dan Rekomendasi. Dua belas bagian lain sengaja kosong untuk diisi sendiri.
+- **14 bagian profil** ala LinkedIn: Pendidikan (terisi UIN), Bahasa, Organisasi, Penghargaan, Publikasi, Paten, Skor Tes, Pengalaman Relawan, Kepedulian, Sorotan, Aktivitas, Minat, Layanan, dan Rekomendasi. Tiga belas bagian lain sengaja kosong untuk diisi sendiri.
 - **0 tautan media sosial** dan **0 aset media** — keduanya diisi sendiri lewat Studio.
-- **2 pesan** di Kotak Masuk dan **8 entri** log audit.
+- **2 pesan** di Kotak Masuk. Log audit terus bertambah setiap mutasi dan sengaja tidak dibatasi.
 
 > Tingkat keahlian disetel `75` sebagai placeholder yang dapat diedit. LinkedIn tidak memuat angka kemahiran, jadi nilai ini bukan klaim terukur.
 
@@ -109,9 +109,9 @@ Karena katalog dan jurnal masih kosong, `/karya` dan `/catatan-lab` menampilkan 
 6. Jurnal Lab (`#jurnal`) — artikel dengan slug otomatis
 7. Rekomendasi (`#rekomendasi`) — testimoni dengan hubungan kerja dan sakelar tampil
 8. Kotak Masuk (`#kotak-masuk`) — status baca, balas, hapus
-9. Konfigurasi (`#konfigurasi`) — identitas global (telepon, situs, alamat, unggah foto profil/sampul, kata ganti, koneksi, pengikut, Open to Work), ekspor/impor JSON, reset
 10. Media & Sosial (`#media-sosial`) — CRUD tautan media sosial (18 platform) dan pustaka media
-11. Log Audit (`#audit`) — filter dan pencarian jejak mutasi
+11. Konfigurasi (`#konfigurasi`) — identitas global (telepon, situs, alamat, unggah foto profil/sampul, kata ganti, koneksi, pengikut, Open to Work), ekspor/impor JSON, reset
+12. Log Audit (`#audit`) — filter dan pencarian jejak mutasi
 
 Palet perintah dapat dibuka dengan `Ctrl+K` / `Cmd+K` dari halaman mana pun.
 
@@ -205,7 +205,7 @@ Skrip ini idempoten: koleksi dan kolom yang sudah ada tidak ditimpa, dan bagian 
 1. Isi **NIM / ID**, **tautan GitHub**, **telepon**, **situs web**, **alamat**, serta **foto profil/sampul** (unggah langsung, bukan URL) melalui Studio → Konfigurasi.
 2. Tambahkan **tautan media sosial** asli (Instagram, Behance, LinkedIn, dst.) lewat Studio → Media & Sosial agar pengunjung dapat menjangkau akun sebenarnya.
 3. Sesuaikan **tingkat keahlian** agar tidak menyisakan placeholder `75`, lalu tambahkan jumlah dukungan bila ada.
-4. Lengkapi **12 bagian profil** yang masih kosong (Bahasa, Organisasi, Penghargaan, Publikasi, Paten, Skor Tes, Relawan, Kepedulian, Sorotan, Aktivitas, Minat, Layanan) lewat Studio → Bagian Profil. Unggah **logo institusi** pada Pendidikan, dan **tautan langsung** pada setiap Publikasi/Paten.
+4. Lengkapi **13 bagian profil** yang masih kosong (Bahasa, Organisasi, Penghargaan, Publikasi, Paten, Skor Tes, Relawan, Kepedulian, Sorotan, Aktivitas, Minat, Layanan, Rekomendasi) lewat Studio → Bagian Profil. Unggah **logo institusi** pada Pendidikan, dan **tautan langsung** pada setiap Publikasi/Paten.
 5. Unggah **logo instansi** pada pengalaman kerja dan **foto sertifikat** pada sertifikasi lewat Studio → Rekam Jejak.
 6. Tambahkan **karya desain** dan **artikel** asli lewat Studio agar katalog serta jurnal terisi.
 7. Pulihkan atau hapus permanen 6 proyek lama di Tempat Sampah setelah dipastikan tidak diperlukan.

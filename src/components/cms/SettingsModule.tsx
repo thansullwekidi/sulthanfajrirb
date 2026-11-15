@@ -216,7 +216,7 @@ export function SettingsModule({ config }: { config: SiteConfig }) {
     <div>
       <div className="admin-head">
         <div>
-          <span className="eyebrow eyebrow--accent">09 / Konfigurasi</span>
+          <span className="eyebrow eyebrow--accent">11 / Konfigurasi</span>
           <h2 className="admin-head__title" style={{ marginTop: 6 }}>
             Identitas global & basis data
           </h2>

@@ -222,7 +222,7 @@ export function SocialModule({
     <div>
       <div className="admin-head">
         <div>
-          <span className="eyebrow eyebrow--accent">11 / Media &amp; Sosial</span>
+          <span className="eyebrow eyebrow--accent">10 / Media &amp; Sosial</span>
           <h2 className="admin-head__title" style={{ marginTop: 6 }}>
             Tautan sosial &amp; pustaka media
           </h2>

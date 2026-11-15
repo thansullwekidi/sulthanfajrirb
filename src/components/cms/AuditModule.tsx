@@ -39,7 +39,7 @@ export function AuditModule({ logs }: { logs: AuditLog[] }) {
     <div>
       <div className="admin-head">
         <div>
-          <span className="eyebrow eyebrow--accent">10 / Audit</span>
+          <span className="eyebrow eyebrow--accent">12 / Audit</span>
           <h2 className="admin-head__title" style={{ marginTop: 6 }}>
             Jejak mutasi yang tidak dapat diubah
           </h2>
