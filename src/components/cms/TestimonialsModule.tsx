@@ -5,6 +5,7 @@ import { apiDelete, apiPatch, apiPost } from "@/client/state/api-client";
 import { useAdminAction } from "@/client/state/useAdminAction";
 import { ConfirmModal } from "@/components/cms/ConfirmModal";
 import { Field } from "@/components/cms/Field";
+import { MediaField } from "@/components/cms/MediaField";
 import { Icon } from "@/components/ui/Icon";
 import { testimonialInputSchema } from "@/contracts/content.contract";
 import type { Testimonial } from "@/contracts/domain";
@@ -26,6 +27,8 @@ function TestimonialForm({
   const [quote, setQuote] = useState(testimonial?.quote ?? "");
   const [verifiedTag, setVerifiedTag] = useState(testimonial?.verifiedTag ?? "Terverifikasi");
   const [date, setDate] = useState(testimonial?.date ?? "");
+  const [avatarUrl, setAvatarUrl] = useState(testimonial?.avatarUrl ?? "");
+  const [profileUrl, setProfileUrl] = useState(testimonial?.profileUrl ?? "");
   const [isVisible, setIsVisible] = useState(testimonial?.isVisible ?? true);
   const [localErrors, setLocalErrors] = useState<Record<string, string>>({});
   const [banner, setBanner] = useState<string | null>(null);
@@ -46,6 +49,8 @@ function TestimonialForm({
       quote,
       verifiedTag,
       date,
+      avatarUrl,
+      profileUrl,
       isVisible
     });
 
@@ -174,6 +179,32 @@ function TestimonialForm({
             />
           </Field>
         </div>
+
+        <MediaField
+          id="tst-avatar"
+          label="Foto Pemberi Rekomendasi"
+          hint="opsional, tampil di samping kutipan publik"
+          purpose="AVATAR"
+          value={avatarUrl}
+          onChange={setAvatarUrl}
+          error={errors.avatarUrl}
+        />
+
+        <Field
+          label="Tautan Profil"
+          htmlFor="tst-profile"
+          error={errors.profileUrl}
+          hint="opsional, mis. LinkedIn pemberi rekomendasi"
+        >
+          <input
+            id="tst-profile"
+            className="input mono"
+            value={profileUrl}
+            onChange={(event) => setProfileUrl(event.target.value)}
+            placeholder="https://www.linkedin.com/in/…"
+            spellCheck={false}
+          />
+        </Field>
 
         <label className="check-row">
           <input

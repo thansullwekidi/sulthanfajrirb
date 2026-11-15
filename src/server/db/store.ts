@@ -123,12 +123,15 @@ function coerceDatabase(input: unknown): Database {
     })),
     skills: array(raw.skills, seed.skills).map((skill) => ({
       ...skill,
-      endorsements: typeof skill.endorsements === "number" ? skill.endorsements : 0
+      endorsements: typeof skill.endorsements === "number" ? skill.endorsements : 0,
+      pinned: skill.pinned ?? false
     })),
     articles: array(raw.articles, seed.articles),
     testimonials: array(raw.testimonials, seed.testimonials).map((testimonial) => ({
       ...testimonial,
       relationship: testimonial.relationship ?? "",
+      avatarUrl: testimonial.avatarUrl ?? "",
+      profileUrl: testimonial.profileUrl ?? "",
       isVisible: testimonial.isVisible ?? true
     })),
     profileSections: profiles,

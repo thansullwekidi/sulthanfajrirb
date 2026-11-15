@@ -209,6 +209,7 @@ export const PROFILE_SECTION_KINDS = [
   "PATENTS",
   "TEST_SCORES",
   "VOLUNTEER",
+  "PROJECTS",
   "CAUSES",
   "INTERESTS",
   "FEATURED",
@@ -229,6 +230,7 @@ export const PROFILE_SECTION_KIND_LABELS: Record<ProfileSectionKind, string> = {
   PATENTS: "Paten",
   TEST_SCORES: "Skor Tes",
   VOLUNTEER: "Pengalaman Relawan",
+  PROJECTS: "Proyek",
   CAUSES: "Kepedulian",
   INTERESTS: "Minat",
   FEATURED: "Sorotan",
@@ -252,6 +254,7 @@ export const PROFILE_SECTION_LAYOUT: Record<ProfileSectionKind, ProfileSectionLa
   PATENTS: "LIST",
   TEST_SCORES: "LIST",
   VOLUNTEER: "TIMELINE",
+  PROJECTS: "GRID",
   CAUSES: "LIST",
   INTERESTS: "GRID",
   FEATURED: "GRID",
@@ -400,6 +403,21 @@ export const PROFILE_ENTRY_LABELS: Record<ProfileSectionKind, ProfileEntryLabels
     imageLabel: "Foto Kegiatan",
     logoLabel: "Logo Organisasi",
     urlLabel: "Tautan Organisasi"
+  },
+  PROJECTS: {
+    title: "Nama Proyek",
+    subtitle: "Peran / Kontribusi",
+    meta: "",
+    description: "Deskripsi Proyek",
+    tags: "Keahlian",
+    showDates: true,
+    showLocation: false,
+    showUrl: true,
+    showImage: true,
+    imageLabel: "Tangkapan Layar Proyek",
+    logoLabel: "Logo Proyek",
+    urlLabel: "Tautan Proyek",
+    showAuthors: true
   },
   CAUSES: {
     title: "Kepedulian",
@@ -628,6 +646,8 @@ export interface Skill {
   level: number;
   context: string;
   endorsements: number;
+  /** Keahlian unggulan yang disematkan di bagian atas profil, seperti "Top Skills" LinkedIn. */
+  pinned: boolean;
   sortOrder: number;
   createdAt: string;
 }
@@ -655,6 +675,10 @@ export interface Testimonial {
   quote: string;
   verifiedTag: string;
   date: string;
+  /** Foto pemberi rekomendasi, diisi lewat unggahan media Studio. */
+  avatarUrl: string;
+  /** Tautan profil pemberi rekomendasi (LinkedIn atau situs resmi). */
+  profileUrl: string;
   isVisible: boolean;
   sortOrder: number;
   createdAt: string;

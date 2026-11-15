@@ -85,7 +85,8 @@ export const skillInputSchema = z.object({
     .int("Jumlah dukungan harus bilangan bulat.")
     .min(0, "Jumlah dukungan tidak boleh negatif.")
     .max(99_999, "Jumlah dukungan terlalu besar.")
-    .default(0)
+    .default(0),
+  pinned: z.boolean().default(false)
 });
 
 export const articleInputSchema = z.object({
@@ -106,6 +107,8 @@ export const testimonialInputSchema = z.object({
   quote: nonEmptyText("Kutipan", 20, 700),
   verifiedTag: z.string().trim().max(60, "Label verifikasi terlalu panjang.").default("Terverifikasi"),
   date: optionalDateIso("Tanggal"),
+  avatarUrl: optionalImageUrl("Foto pemberi rekomendasi"),
+  profileUrl: optionalHttpUrl("Tautan profil pemberi rekomendasi"),
   isVisible: z.boolean().default(true)
 });
 

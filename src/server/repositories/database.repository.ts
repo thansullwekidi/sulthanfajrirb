@@ -173,6 +173,7 @@ export async function importDatabase(input: DatabaseImport): Promise<Database> {
       level: skill.level,
       context: skill.context,
       endorsements: skill.endorsements,
+      pinned: skill.pinned ?? false,
       sortOrder: skill.sortOrder ?? index + 1,
       createdAt: skill.createdAt ?? now
     })),
@@ -186,6 +187,8 @@ export async function importDatabase(input: DatabaseImport): Promise<Database> {
       quote: testimonial.quote,
       verifiedTag: testimonial.verifiedTag,
       date: testimonial.date || now.slice(0, 10),
+      avatarUrl: testimonial.avatarUrl ?? "",
+      profileUrl: testimonial.profileUrl ?? "",
       isVisible: testimonial.isVisible,
       sortOrder: testimonial.sortOrder ?? index + 1,
       createdAt: testimonial.createdAt ?? now

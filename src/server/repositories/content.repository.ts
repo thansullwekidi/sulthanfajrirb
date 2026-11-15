@@ -218,6 +218,7 @@ export async function createSkill(input: SkillInput): Promise<Skill> {
       level: input.level,
       context: input.context,
       endorsements: input.endorsements,
+      pinned: input.pinned,
       sortOrder: nextOrder(draft.skills),
       createdAt: new Date().toISOString()
     };
@@ -242,6 +243,7 @@ export async function updateSkill(id: string, input: SkillInput): Promise<Skill>
     entity.level = input.level;
     entity.context = input.context;
     entity.endorsements = input.endorsements;
+    entity.pinned = input.pinned;
     appendAudit(draft, {
       action: "UPDATE",
       entityType: "SKILL",
@@ -361,6 +363,8 @@ export async function createTestimonial(input: TestimonialInput): Promise<Testim
       quote: input.quote,
       verifiedTag: input.verifiedTag,
       date: input.date || new Date().toISOString().slice(0, 10),
+      avatarUrl: input.avatarUrl,
+      profileUrl: input.profileUrl,
       isVisible: input.isVisible,
       sortOrder: nextOrder(draft.testimonials),
       createdAt: new Date().toISOString()
@@ -391,6 +395,8 @@ export async function updateTestimonial(
     entity.quote = input.quote;
     entity.verifiedTag = input.verifiedTag;
     entity.date = input.date || entity.date;
+    entity.avatarUrl = input.avatarUrl;
+    entity.profileUrl = input.profileUrl;
     entity.isVisible = input.isVisible;
     appendAudit(draft, {
       action: "UPDATE",

@@ -107,6 +107,7 @@ export function buildSeedDatabase(): Database {
       level: 75,
       context,
       endorsements: 0,
+      pinned: false,
       sortOrder: index + 1,
       createdAt: now
     })),
@@ -231,13 +232,25 @@ export function buildSeedDatabase(): Database {
         updatedAt: now
       },
       {
+        id: "prf_proyek",
+        slug: "proyek",
+        title: "Proyek",
+        subtitle: "Karya yang dikerjakan langsung",
+        kind: "PROJECTS",
+        visible: true,
+        sortOrder: 9,
+        entries: [],
+        createdAt: now,
+        updatedAt: now
+      },
+      {
         id: "prf_kepedulian",
         slug: "kepedulian",
         title: "Kepedulian",
         subtitle: "Isu yang diperjuangkan",
         kind: "CAUSES",
         visible: true,
-        sortOrder: 9,
+        sortOrder: 10,
         entries: [],
         createdAt: now,
         updatedAt: now
@@ -249,7 +262,7 @@ export function buildSeedDatabase(): Database {
         subtitle: "Karya dan tautan pilihan",
         kind: "FEATURED",
         visible: true,
-        sortOrder: 10,
+        sortOrder: 11,
         entries: [],
         createdAt: now,
         updatedAt: now
@@ -261,7 +274,7 @@ export function buildSeedDatabase(): Database {
         subtitle: "Catatan dan unggahan terbaru",
         kind: "ACTIVITY",
         visible: true,
-        sortOrder: 11,
+        sortOrder: 12,
         entries: [],
         createdAt: now,
         updatedAt: now
@@ -273,7 +286,7 @@ export function buildSeedDatabase(): Database {
         subtitle: "Topik, organisasi, dan tokoh yang diikuti",
         kind: "INTERESTS",
         visible: true,
-        sortOrder: 12,
+        sortOrder: 13,
         entries: [],
         createdAt: now,
         updatedAt: now
@@ -285,7 +298,7 @@ export function buildSeedDatabase(): Database {
         subtitle: "Jasa yang dapat dipesan",
         kind: "SERVICES",
         visible: true,
-        sortOrder: 13,
+        sortOrder: 14,
         entries: [],
         createdAt: now,
         updatedAt: now
@@ -297,7 +310,7 @@ export function buildSeedDatabase(): Database {
         subtitle: "Kata orang lain tentang kerja sama",
         kind: "RECOMMENDATIONS",
         visible: true,
-        sortOrder: 14,
+        sortOrder: 15,
         entries: [],
         createdAt: now,
         updatedAt: now

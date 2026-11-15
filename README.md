@@ -26,7 +26,7 @@ Field kosong sengaja dibiarkan agar tidak mengarang data. NIM, GitHub, dan catat
 - **8 keahlian** desain: Adobe Illustrator, Adobe Premiere Pro, CorelDRAW, Desain Logo, Graphic Design, Komunikasi, Adobe Photoshop, After Effects.
 - **4 artikel** berstatus `DRAFT` (tidak tampil di `/catatan-lab` sampai diterbitkan).
 - **0 sertifikasi** dan **0 rekomendasi** karena tidak tercantum di profil sumber.
-- **14 bagian profil** ala LinkedIn: Pendidikan (terisi UIN), Bahasa, Organisasi, Penghargaan, Publikasi, Paten, Skor Tes, Pengalaman Relawan, Kepedulian, Sorotan, Aktivitas, Minat, Layanan, dan Rekomendasi. Tiga belas bagian lain sengaja kosong untuk diisi sendiri.
+- **15 bagian profil** ala LinkedIn: Pendidikan (terisi UIN), Bahasa, Organisasi, Penghargaan, Publikasi, Paten, Skor Tes, Pengalaman Relawan, Proyek, Kepedulian, Sorotan, Aktivitas, Minat, Layanan, dan Rekomendasi. Empat belas bagian lain sengaja kosong untuk diisi sendiri.
 - **0 tautan media sosial** dan **0 aset media** — keduanya diisi sendiri lewat Studio.
 - **2 pesan** di Kotak Masuk. Log audit terus bertambah setiap mutasi dan sengaja tidak dibatasi.
 
@@ -117,7 +117,7 @@ Palet perintah dapat dibuka dengan `Ctrl+K` / `Cmd+K` dari halaman mana pun.
 
 ### Bagian Profil ala LinkedIn
 
-Modul **Bagian Profil** memetakan seluruh bagian profil LinkedIn ke satu model data generik: `ProfileSection` (dengan `kind`) berisi `ProfileEntry`. Enam belas jenis bagian tersedia — Pendidikan, Mata Kuliah, Bahasa, Organisasi, Penghargaan, Publikasi, Paten, Skor Tes, Pengalaman Relawan, Kepedulian, Minat, Sorotan, Aktivitas, Layanan, Rekomendasi, dan Bagian Kustom — masing-masing dengan label kolom sendiri (`PROFILE_ENTRY_LABELS`) dan tata letak publik otomatis (`PROFILE_SECTION_LAYOUT`: linimasa, daftar, kartu, atau unggahan).
+Modul **Bagian Profil** memetakan seluruh bagian profil LinkedIn ke satu model data generik: `ProfileSection` (dengan `kind`) berisi `ProfileEntry`. Tujuh belas jenis bagian tersedia — Pendidikan, Mata Kuliah, Bahasa, Organisasi, Penghargaan, Publikasi, Paten, Skor Tes, Pengalaman Relawan, **Proyek**, Kepedulian, Minat, Sorotan, Aktivitas, Layanan, Rekomendasi, dan Bagian Kustom — masing-masing dengan label kolom sendiri (`PROFILE_ENTRY_LABELS`) dan tata letak publik otomatis (`PROFILE_SECTION_LAYOUT`: linimasa, daftar, kartu, atau unggahan).
 
 Setiap bagian maupun entri dapat diubah judulnya, digeser naik/turun, disembunyikan dari halaman publik, atau dihapus permanen. Seluruh aksi ditulis ke log audit sebagai `CREATE`, `UPDATE`, `REORDER`, atau `PURGE`.
 
@@ -125,11 +125,17 @@ Kolom media bersifat kondisional dan hanya dirender bila terisi:
 
 | Kolom | Dipakai pada | Keterangan |
 | --- | --- | --- |
-| `logoUrl` | Pendidikan, Organisasi, Relawan | Logo institusi tampil sebagai lencana di samping judul |
-| `imageUrl` | Publikasi, Paten, Sorotan, Aktivitas, Layanan, Rekomendasi, Kustom | Sampul publikasi atau foto kegiatan |
-| `authors`, `publisher` | Publikasi, Paten, Kustom | Ditampilkan sebagai baris penulis/penerbit |
+| `logoUrl` | Pendidikan, Organisasi, Relawan, Proyek | Logo institusi tampil sebagai lencana di samping judul |
+| `imageUrl` | Publikasi, Paten, Sorotan, Aktivitas, Layanan, Rekomendasi, Proyek, Kustom | Sampul publikasi, tangkapan layar proyek, atau foto kegiatan |
+| `authors`, `publisher` | Publikasi, Paten, Proyek, Kustom | Ditampilkan sebagai baris penulis/penerbit |
 
 **Publikasi dan paten wajib menyertakan tautan langsung** ke dokumen aslinya. Aturan ini ditegakkan dua kali: di formulir Studio dan di repositori (`ENTRY_URL_REQUIRED`), sehingga tidak dapat dilewati lewat pemanggilan API langsung. Tautan mesin pencari (Google/Bing) ditolak karena bukan sumber publikasi.
+
+### Keahlian Unggulan dan Rekomendasi
+
+Meniru **Top Skills** LinkedIn, setiap keahlian punya sakelar `pinned`. Keahlian yang disematkan tampil sebagai deret "Keahlian Unggulan" di atas matriks kompetensi beranda, lengkap dengan jumlah dukungan bila ada. Jumlahnya tidak dibatasi agar Anda bebas menentukan prioritas.
+
+Rekomendasi (modul `07`) menyimpan **foto pemberi rekomendasi** (`avatarUrl`) dan **tautan profilnya** (`profileUrl`), persis seperti rekomendasi LinkedIn. Foto tampil di samping kutipan dan tautan profil dirender sebagai "Lihat profil" — keduanya hanya muncul bila terisi.
 
 ### Media dan Media Sosial
 
@@ -191,7 +197,9 @@ Skrip ini idempoten: koleksi dan kolom yang sudah ada tidak ditimpa, dan bagian 
 | `npm run start` | Menjalankan hasil build |
 | `npm run typecheck` | Pemeriksaan TypeScript tanpa emit |
 | `node scripts/e2e-media-social.cjs` | Uji end-to-end media, media sosial, dan entri profil (server harus berjalan) |
+| `node scripts/e2e-linkedin-parity.cjs` | Uji kesetaraan LinkedIn: Proyek, keahlian unggulan, rekomendasi berfoto |
 | `node scripts/migrate-media-social.cjs` | Migrasi basis data live ke skema media & sosial |
+| `node scripts/migrate-linkedin-parity.cjs` | Migrasi basis data live: bagian Proyek, foto/tautan rekomendasi, keahlian unggulan |
 
 ## Catatan Desain
 
@@ -205,7 +213,7 @@ Skrip ini idempoten: koleksi dan kolom yang sudah ada tidak ditimpa, dan bagian 
 1. Isi **NIM / ID**, **tautan GitHub**, **telepon**, **situs web**, **alamat**, serta **foto profil/sampul** (unggah langsung, bukan URL) melalui Studio → Konfigurasi.
 2. Tambahkan **tautan media sosial** asli (Instagram, Behance, LinkedIn, dst.) lewat Studio → Media & Sosial agar pengunjung dapat menjangkau akun sebenarnya.
 3. Sesuaikan **tingkat keahlian** agar tidak menyisakan placeholder `75`, lalu tambahkan jumlah dukungan bila ada.
-4. Lengkapi **13 bagian profil** yang masih kosong (Bahasa, Organisasi, Penghargaan, Publikasi, Paten, Skor Tes, Relawan, Kepedulian, Sorotan, Aktivitas, Minat, Layanan, Rekomendasi) lewat Studio → Bagian Profil. Unggah **logo institusi** pada Pendidikan, dan **tautan langsung** pada setiap Publikasi/Paten.
+4. Lengkapi **14 bagian profil** yang masih kosong (Bahasa, Organisasi, Penghargaan, Publikasi, Paten, Skor Tes, Relawan, Proyek, Kepedulian, Sorotan, Aktivitas, Minat, Layanan, Rekomendasi) lewat Studio → Bagian Profil. Unggah **logo institusi** pada Pendidikan, dan **tautan langsung** pada setiap Publikasi/Paten.
 5. Unggah **logo instansi** pada pengalaman kerja dan **foto sertifikat** pada sertifikasi lewat Studio → Rekam Jejak.
 6. Tambahkan **karya desain** dan **artikel** asli lewat Studio agar katalog serta jurnal terisi.
 7. Pulihkan atau hapus permanen 6 proyek lama di Tempat Sampah setelah dipastikan tidak diperlukan.

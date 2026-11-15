@@ -130,6 +130,7 @@ export default async function OverviewPage() {
     ]);
 
   const verifiedMetrics = projects.filter((project) => project.metricValue.trim().length > 0).length;
+  const pinnedSkills = skills.filter((skill) => skill.pinned);
   const metricCoverage = projects.length === 0 ? 0 : Math.round((verifiedMetrics / projects.length) * 100);
   const totalReadingMinutes = articles.reduce((sum, article) => sum + article.readTime, 0);
   const drafts = allProjects.filter((project) => project.status === "DRAFT").length;
@@ -434,13 +435,22 @@ export default async function OverviewPage() {
             <Icon name="arrow-right" size={12} />
           </Link>
         </div>
+        {pinnedSkills.length > 0 ? (
+          <div className="stack" style={{ gap: 8, marginTop: 20 }}>
+            <span className="eyebrow">Keahlian Unggulan</span>
+            <div className="tag-row">
+              {pinnedSkills.map((skill) => (
+                <span key={skill.id} className="tag">
+                  {skill.name}
+                  {skill.endorsements > 0 ? ` · ${skill.endorsements}` : ""}
+                </span>
+              ))}
+            </div>
+          </div>
+        ) : null}
         <div className="domain-grid">
           {SKILL_DOMAINS.map((domain) => (
-            <SkillDomainCell
-              key={domain}
-              domain={domain}
-              skills={skills.slice(0, 12)}
-            />
+            <SkillDomainCell key={domain} domain={domain} skills={skills} />
           ))}
         </div>
       </section>
@@ -459,13 +469,53 @@ export default async function OverviewPage() {
               </span>
               <blockquote className="quote__text">{testimonial.quote}</blockquote>
               <figcaption className="quote__author">
-                <span className="quote__name">{testimonial.author}</span>
-                <span className="quote__role">
-                  {testimonial.role} · {testimonial.organization}
-                </span>
+                <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+                  {testimonial.avatarUrl ? (
+                    <span
+                      style={{
+                        width: 32,
+                        height: 32,
+                        flex: "0 0 auto",
+                        border: "1px solid var(--line)",
+                        overflow: "hidden",
+                        display: "grid",
+                        placeItems: "center",
+                        background: "var(--surface)"
+                      }}
+                    >
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={testimonial.avatarUrl}
+                        alt={testimonial.author}
+                        width={32}
+                        height={32}
+                        loading="lazy"
+                        style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                      />
+                    </span>
+                  ) : null}
+                  <div className="stack" style={{ gap: 2 }}>
+                    <span className="quote__name">{testimonial.author}</span>
+                    <span className="quote__role">
+                      {testimonial.role} · {testimonial.organization}
+                    </span>
+                  </div>
+                </div>
                 <span className="badge badge--ok" style={{ alignSelf: "flex-start" }}>
                   {testimonial.verifiedTag}
                 </span>
+                {testimonial.profileUrl ? (
+                  <a
+                    href={testimonial.profileUrl}
+                    target="_blank"
+                    rel="noreferrer noopener"
+                    className="link-inline"
+                    style={{ alignSelf: "flex-start", fontSize: 11 }}
+                  >
+                    Lihat profil
+                    <Icon name="external" size={10} />
+                  </a>
+                ) : null}
               </figcaption>
             </figure>
           ))}

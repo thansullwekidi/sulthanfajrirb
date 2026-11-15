@@ -27,6 +27,7 @@ function SkillForm({
   const [category, setCategory] = useState<SkillDomain>(skill?.category ?? "REKAYASA_WEB");
   const [level, setLevel] = useState(skill?.level ?? 70);
   const [endorsements, setEndorsements] = useState(skill?.endorsements ?? 0);
+  const [pinned, setPinned] = useState(skill?.pinned ?? false);
   const [context, setContext] = useState(skill?.context ?? "");
   const [localErrors, setLocalErrors] = useState<Record<string, string>>({});
   const [banner, setBanner] = useState<string | null>(null);
@@ -44,7 +45,8 @@ function SkillForm({
       category,
       level,
       context,
-      endorsements
+      endorsements,
+      pinned
     });
     if (!parsed.success) {
       setLocalErrors(fieldErrorsFromZod(parsed.error));
@@ -167,6 +169,15 @@ function SkillForm({
             placeholder="Dipakai untuk orkestrasi 14 skenario regresi pada tiga lingkungan."
           />
         </Field>
+
+        <label className="check-row">
+          <input
+            type="checkbox"
+            checked={pinned}
+            onChange={(event) => setPinned(event.target.checked)}
+          />
+          Sematkan sebagai keahlian unggulan di bagian atas profil
+        </label>
 
         <div className="form-actions">
           <span className="form-note">
@@ -311,6 +322,11 @@ export function SkillsModule({ skills }: { skills: Skill[] }) {
                       >
                         <span className="admin-table__title" style={{ fontSize: 15 }}>
                           {skill.name}
+                          {skill.pinned ? (
+                            <span className="badge badge--accent" style={{ marginLeft: 8 }}>
+                              UNGGULAN
+                            </span>
+                          ) : null}
                         </span>
                         <span className="admin-table__sub">
                           {skill.context || "Tanpa konteks tambahan"}
