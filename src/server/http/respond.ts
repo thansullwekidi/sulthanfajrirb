@@ -22,8 +22,7 @@ const COLLECTIONS: CollectionName[] = [
   "experiences",
   "certifications",
   "skills",
-  "articles",
-  "testimonials"
+  "articles"
 ];
 
 export function asCollectionName(value: string): CollectionName | null {

@@ -26,7 +26,6 @@ function linkLabel(section: ProfileSection): string {
   if (section.kind === "PATENTS") return "Buka dokumen paten";
   if (section.kind === "FEATURED") return "Buka sorotan";
   if (section.kind === "SERVICES") return "Pesan layanan";
-  if (section.kind === "RECOMMENDATIONS") return "Lihat profil";
   if (section.kind === "EDUCATION") return "Situs institusi";
   if (section.kind === "ACTIVITY") return "Lihat unggahan";
   return labels.urlLabel ?? "Buka tautan";
@@ -277,6 +276,13 @@ function ListLayout({ section }: { section: ProfileSection }) {
                         {entry.description}
                       </div>
                     ) : null}
+                    {entry.location ? (
+                      <div className="mono" style={{ fontSize: 9.5, color: "var(--muted)", marginTop: 4 }}>
+                        {entry.location}
+                      </div>
+                    ) : null}
+                    {entry.isCurrent ? <span className="badge badge--ok">Berlangsung</span> : null}
+                    <EntryTags tags={entry.tags} />
                     {entry.notes ? (
                       <div
                         style={{
@@ -349,12 +355,19 @@ function GridLayout({ section }: { section: ProfileSection }) {
                 </h3>
               </div>
             </div>
-            {entry.startDate ? (
+            {period(entry) ? (
               <span className="mono" style={{ fontSize: 9.5, color: "var(--muted)" }}>
                 {period(entry)}
               </span>
             ) : null}
           </div>
+          {entry.meta || entry.location || entry.isCurrent ? (
+            <div className="stack-group__meta">
+              {entry.meta ? <span className="badge badge--accent">{entry.meta}</span> : null}
+              {entry.location ? <span className="mono" style={{ fontSize: 9.5, color: "var(--muted)" }}>{entry.location}</span> : null}
+              {entry.isCurrent ? <span className="badge badge--ok">Berlangsung</span> : null}
+            </div>
+          ) : null}
           <EntryImage url={entry.imageUrl} title={entry.title} wide />
           {entry.fieldOfStudy ? (
             <span className="mono" style={{ fontSize: 9.5, color: "var(--muted)" }}>
@@ -385,6 +398,11 @@ function PostsLayout({ section }: { section: ProfileSection }) {
           {entry.subtitle ? <span className="eyebrow">{entry.subtitle}</span> : null}
           <blockquote className="quote__text">{entry.description || entry.title}</blockquote>
           <EntryImage url={entry.imageUrl} title={entry.title} wide />
+          {entry.location ? <span className="quote__role">{entry.location}</span> : null}
+          {entry.fieldOfStudy ? <span className="quote__role">{entry.fieldOfStudy}</span> : null}
+          {entry.isCurrent ? <span className="badge badge--ok">Berlangsung</span> : null}
+          {entry.notes ? <EntryNotes entry={entry} /> : null}
+          <EntryTags tags={entry.tags} />
           <figcaption className="quote__author">
             <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
               <EntryLogo url={entry.logoUrl} title={entry.title} />

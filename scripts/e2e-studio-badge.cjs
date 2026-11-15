@@ -75,7 +75,7 @@ async function call(method, path, body) {
     `${filled}/${total}`
   );
 
-  console.log("\n== JURNAL: TERBIT vs DRAF ==");
+  console.log("\n== PUBLIKASI: TERBIT vs DRAF ==");
   const published = database.articles.filter((a) => a.status === "PUBLISHED").length;
   const draft = database.articles.filter((a) => a.status === "DRAFT").length;
   check("artikel terhitung utuh", published + draft === database.articles.length);
@@ -85,55 +85,24 @@ async function call(method, path, body) {
     `terbit ${published}, draf ${draft}`
   );
 
-  console.log("\n== PROYEK: TERBIT vs DRAF vs ARSIP ==");
-  const pub = database.projects.filter((p) => p.status === "PUBLISHED").length;
-  const drf = database.projects.filter((p) => p.status === "DRAFT").length;
-  const ars = database.projects.filter((p) => p.status === "ARCHIVED").length;
-  check("proyek terhitung utuh", pub + drf + ars === database.projects.length);
-  check(
-    "tempat sampah hanya berisi arsip",
-    counts.projectsArchived === ars,
-    `${counts.projectsArchived} vs ${ars}`
-  );
-  check(
-    "manajer proyek tidak menghitung arsip",
-    counts.projectsPublished + counts.projectsDraft === pub + drf,
-    `${counts.projectsPublished + counts.projectsDraft} vs ${pub + drf}`
-  );
+  console.log("\n== FITUR YANG DIHAPUS ==");
+  check("data proyek tidak ada di snapshot", !Object.hasOwn(database, "projects"));
+  const catalog = await fetch(`${BASE}/karya`, { redirect: "manual" });
+  check("rute katalog lama dialihkan", catalog.status === 307, String(catalog.status));
 
   console.log("\n== KONSISTENSI DENGAN HALAMAN PUBLIK ==");
-  const karya = await (await fetch(`${BASE}/karya`)).text();
-  const rekam = await (await fetch(`${BASE}/rekam-jejak`)).text();
-
-  const terbitDiKatalog = database.projects.filter(
-    (p) => p.status === "PUBLISHED" && karya.includes(p.title)
-  ).length;
-  check(
-    "semua proyek TERBIT tampil di /karya",
-    terbitDiKatalog === pub,
-    `${terbitDiKatalog} dari ${pub}`
-  );
-
-  const arsipDiKatalog = database.projects.filter(
-    (p) => p.status === "ARCHIVED" && karya.includes(p.title)
-  ).length;
-  check("proyek ARSIP tidak bocor ke /karya", arsipDiKatalog === 0, String(arsipDiKatalog));
-
-  const tampilDiRekam = database.profileSections.filter(
-    (s) => s.visible && s.entries.some((e) => e.visible) && rekam.includes(s.title)
-  ).length;
-  check(
-    "hanya bagian terisi yang tampil di /rekam-jejak",
-    tampilDiRekam === filled,
-    `${tampilDiRekam} vs ${filled}`
-  );
+  const home = await (await fetch(`${BASE}/`)).text();
+  check("artikel terbit tampil di beranda", database.articles
+    .filter((article) => article.status === "PUBLISHED")
+    .every((article) => home.includes(article.title)));
+  check("label rekomendasi lama tidak tampil", !home.includes("Rekomendasi Terverifikasi"));
 
   console.log("\n== BADGE MEMUAT KONTEKS ==");
-  // Badge kini berbentuk "terisi/total" untuk profil dan "terbit/total" untuk jurnal.
+  // Badge berbentuk "terisi/total" untuk profil dan "terbit/total" untuk publikasi.
   const profilBadge = `${filled}/${total}`;
-  const jurnalBadge = `${published}/${database.articles.length}`;
+  const publicationBadge = `${published}/${database.articles.length}`;
   check("format badge profil terisi/total", /^\d+\/\d+$/.test(profilBadge), profilBadge);
-  check("format badge jurnal terbit/total", /^\d+\/\d+$/.test(jurnalBadge), jurnalBadge);
+  check("format badge publikasi terbit/total", /^\d+\/\d+$/.test(publicationBadge), publicationBadge);
   check(
     "badge profil tidak lagi menampilkan total mentah saja",
     profilBadge !== String(total),
@@ -141,7 +110,7 @@ async function call(method, path, body) {
   );
 
   console.log(`\nHASIL: ${pass} lolos, ${fail} gagal\n`);
-  process.exit(fail === 0 ? 0 : 1);
+  process.exitCode = fail === 0 ? 0 : 1;
 })().catch((error) => {
   console.error("Kesalahan uji:", error);
   process.exit(1);

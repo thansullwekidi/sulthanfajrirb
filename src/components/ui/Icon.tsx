@@ -38,7 +38,8 @@ export type IconName =
   | "code"
   | "location"
   | "spark"
-  | "user";
+  | "user"
+  | "file";
 
 const PATHS: Record<Exclude<IconName, "github" | "linkedin">, string> = {
   "arrow-right": "M4 12h16M14 6l6 6-6 6",
@@ -76,7 +77,8 @@ const PATHS: Record<Exclude<IconName, "github" | "linkedin">, string> = {
   code: "m8 6-6 6 6 6M16 6l6 6-6 6M14 3l-4 18",
   location: "M12 22s7-6.3 7-12a7 7 0 1 0-14 0c0 5.7 7 12 7 12ZM12 13a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z",
   spark: "M12 2v6M12 16v6M2 12h6M16 12h6M5 5l4 4M15 15l4 4M19 5l-4 4M9 15l-4 4",
-  user: "M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8ZM4.5 21a7.5 7.5 0 0 1 15 0"
+  user: "M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8ZM4.5 21a7.5 7.5 0 0 1 15 0",
+  file: "M6 3h8l4 4v14H6zM14 3v5h5M9 13h6M9 17h6"
 };
 
 interface IconProps extends SVGProps<SVGSVGElement> {

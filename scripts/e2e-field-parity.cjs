@@ -1,11 +1,24 @@
 /**
- * AUDIT FINAL: setiap field yang terisi di database harus tampil di web.
- * Termasuk konversi tanggal ISO -> format Indonesia.
+ * AUDIT FINAL: setiap field konten yang relevan tampil di halaman publik.
+ * CV ditampilkan sebagai PDF unggahan terpisah, bukan hasil gabungan field profil.
  */
 const fs = require("node:fs");
 const path = require("node:path");
 
 const BASE = "http://localhost:3000";
+const EXPERIENCE_LABELS = { AKADEMIK: "Akademik", PROYEK: "Proyek", KARIER: "Karier" };
+const EMPLOYMENT_LABELS = {
+  FULL_TIME: "Penuh Waktu",
+  PART_TIME: "Paruh Waktu",
+  SELF_EMPLOYED: "Wiraswasta",
+  FREELANCE: "Lepas",
+  CONTRACT: "Kontrak",
+  INTERNSHIP: "Magang",
+  APPRENTICESHIP: "Pemagangan",
+  SEASONAL: "Musiman",
+  VOLUNTEER: "Relawan"
+};
+const WORK_MODE_LABELS = { ON_SITE: "Di Kantor", HYBRID: "Hibrida", REMOTE: "Jarak Jauh" };
 
 function inHtml(html, text) {
   if (!text || !text.toString().trim()) return true;
@@ -34,7 +47,7 @@ function inHtml(html, text) {
 (async () => {
   const db = JSON.parse(fs.readFileSync(path.join(process.cwd(), ".data", "portfolio.json"), "utf8"));
   const pages = {};
-  for (const r of ["/", "/karya", "/rekam-jejak", "/catatan-lab", "/cv", "/kontak"]) {
+  for (const r of ["/", "/rekam-jejak", "/catatan-lab", "/cv", "/kontak"]) {
     pages[r] = await fetch(`${BASE}${r}`).then(res => res.text());
   }
 
@@ -46,97 +59,118 @@ function inHtml(html, text) {
     else { bug++; bugs.push(`${label}: "${String(val).slice(0,50)}"`); }
   }
 
-  // PROYEK
-  for (const p of db.projects.filter(p => p.status === "PUBLISHED")) {
-    const h = pages["/karya"];
-    for (const f of ["title","subtitle","challenge","solution","caseStudy","metricLabel","metricValue","diagramType","codeSnippet","category","commitHash"]) {
-      if (p[f] && p[f].toString().trim()) check(`proyek ${p.slug}.${f}`, h, p[f]);
-    }
-    if (p.links) for (const k of ["github","live","notebook"]) if (p.links[k]) check(`proyek ${p.slug}.links.${k}`, h, p.links[k]);
-    for (const tech of p.techStack) check(`proyek ${p.slug}.tech`, h, tech);
-    if (p.isFeatured) check(`proyek ${p.slug} unggulan di /`, pages["/"], p.title);
+  function checkResult(label, passed, detail) {
+    if (passed) { ok++; }
+    else { bug++; bugs.push(`${label}: "${detail}"`); }
   }
+
+  // KATALOG PROYEK SUDAH DIHAPUS
+  const catalogResponse = await fetch(`${BASE}/karya`, { redirect: "manual" });
+  checkResult("rute katalog lama dialihkan", catalogResponse.status === 307, "/karya");
+  checkResult("data proyek dihapus dari basis data", !Object.hasOwn(db, "projects"), "projects");
 
   // PENGALAMAN
   for (const e of db.experiences) {
-    for (const f of ["role","organization","period","startDate","endDate","location","description"]) {
+    for (const f of ["role","organization","startDate","endDate","location","description"]) {
       if (e[f] && e[f].toString().trim()) {
-        check(`pengalaman ${e.role}.${f} di /rekam-jejak`, pages["/rekam-jejak"], e[f]);
-        check(`pengalaman ${e.role}.${f} di /cv`, pages["/cv"], e[f]);
+        check(`pengalaman ${e.role}.${f} di /`, pages["/"], e[f]);
       }
     }
-    for (const hl of e.highlights) check(`pengalaman ${e.role}.highlight`, pages["/rekam-jejak"], hl);
-    for (const sk of e.skills) check(`pengalaman ${e.role}.skill`, pages["/rekam-jejak"], sk);
+    if (e.logoUrl) check(`pengalaman ${e.role}.logoUrl di /`, pages["/"], e.logoUrl);
+    if (e.organizationUrl) check(`pengalaman ${e.role}.organizationUrl di /`, pages["/"], e.organizationUrl);
+    check(`pengalaman ${e.role}.type di /`, pages["/"], EXPERIENCE_LABELS[e.type]);
+    check(`pengalaman ${e.role}.employmentType di /`, pages["/"], EMPLOYMENT_LABELS[e.employmentType]);
+    check(`pengalaman ${e.role}.workMode di /`, pages["/"], WORK_MODE_LABELS[e.workMode]);
+    if (!e.startDate && !e.endDate && e.period) {
+      check(`pengalaman ${e.role}.period di /`, pages["/"], e.period);
+    }
+    e.highlights.forEach((hl) => check(`pengalaman ${e.role}.highlight di /`, pages["/"], hl));
+    e.skills.forEach((skill) => check(`pengalaman ${e.role}.skill di /`, pages["/"], skill));
+  }
+
+  // BAGIAN PROFIL
+  for (const section of db.profileSections.filter(
+    (item) => item.visible && item.entries.some((entry) => entry.visible)
+  )) {
+    check(`bagian profil ${section.title}`, pages["/"], section.title);
+    for (const entry of section.entries.filter((item) => item.visible)) {
+      check(`entri profil ${section.title}.${entry.title}`, pages["/"], entry.title);
+      for (const f of [
+        "subtitle",
+        "meta",
+        "location",
+        "startDate",
+        "endDate",
+        "description",
+        "fieldOfStudy",
+        "notes",
+        "url",
+        "imageUrl",
+        "logoUrl",
+        "authors",
+        "publisher"
+      ]) {
+        if (entry[f]) check(`profil ${section.title}.${entry.title}.${f}`, pages["/"], entry[f]);
+      }
+      entry.tags.forEach((tag) => check(`profil ${section.title}.${entry.title}.tag`, pages["/"], tag));
+      if (entry.isCurrent) check(`profil ${section.title}.${entry.title}.isCurrent`, pages["/"], "Berlangsung");
+    }
   }
 
   // SERTIFIKASI
   for (const c of db.certifications) {
-    for (const f of ["title","issuer","issueDate","expiryDate","credentialId","verifyUrl"]) {
-      if (c[f] && c[f].toString().trim()) check(`sertifikasi ${c.title.slice(0,15)}.${f}`, pages["/rekam-jejak"], c[f]);
+    for (const f of ["title", "issuer", "issueDate", "expiryDate", "credentialId"]) {
+      if (c[f] && c[f].toString().trim()) check(`sertifikasi ${c.title.slice(0,15)}.${f} di /`, pages["/"], c[f]);
     }
+    for (const f of ["imageUrl", "issuerLogoUrl"]) {
+      if (c[f]) check(`sertifikasi ${c.title.slice(0,15)}.${f} di /`, pages["/"], c[f]);
+    }
+    c.skills.forEach((skill) => check(`sertifikasi ${c.title.slice(0,15)}.skill di /`, pages["/"], skill));
   }
 
   // SKILL
-  for (const s of db.skills) {
-    // name wajib tampil di /, /rekam-jejak, /cv
+  for (const s of db.skills.filter((skill) => skill.category === "MEDIA_KREATIF")) {
     if (s.name && s.name.trim()) {
       check(`skill ${s.name}.name di /`, pages["/"], s.name);
-      check(`skill ${s.name}.name di /rekam-jejak`, pages["/rekam-jejak"], s.name);
-      check(`skill ${s.name}.name di /cv`, pages["/cv"], s.name);
-    }
-    // context keahlian ditampilkan di / dan /rekam-jejak (tidak wajib di CV ATS minimalis)
-    if (s.context && s.context.trim()) {
       check(`skill ${s.name}.context di /`, pages["/"], s.context);
-      check(`skill ${s.name}.context di /rekam-jejak`, pages["/rekam-jejak"], s.context);
-    }
-    if (s.level !== undefined) check(`skill ${s.name}.level di /`, pages["/"], String(s.level));
-  }
-
-  // TESTIMONI
-  for (const t of db.testimonials) {
-    for (const f of ["author","role","organization","relationship","quote","verifiedTag","date"]) {
-      if (t[f] && t[f].toString().trim()) check(`testimoni ${t.author}.${f}`, pages["/"], t[f]);
+      check(`skill ${s.name}.level di /`, pages["/"], String(s.level));
+      if (s.endorsements > 0) {
+        check(`skill ${s.name}.endorsements di /`, pages["/"], `${s.endorsements} dukungan`);
+      }
     }
   }
 
   // ARTIKEL
   for (const a of db.articles.filter(a => a.status === "PUBLISHED")) {
-    for (const f of ["title","summary","content","category","slug"]) {
-      if (a[f] && a[f].toString().trim()) check(`artikel ${a.slug}.${f}`, pages["/catatan-lab"], a[f]);
+    for (const f of ["title","summary","category","externalUrl"]) {
+      if (a[f] && a[f].toString().trim()) check(`artikel ${a.slug}.${f}`, pages["/"], a[f]);
     }
-    if (a.readTime) check(`artikel ${a.slug}.readTime`, pages["/catatan-lab"], String(a.readTime));
-  }
-
-  // BAGIAN PROFIL
-  for (const sec of db.profileSections) {
-    for (const entry of sec.entries.filter(e => e.visible)) {
-      // title selalu tampil di /rekam-jejak, dan di / /cv untuk EDUCATION
-      if (entry.title && entry.title.trim()) {
-        check(`profil [${sec.kind}] ${entry.title.slice(0,15)}.title di /rekam-jejak`, pages["/rekam-jejak"], entry.title);
-        if (sec.kind === "EDUCATION") {
-          check(`profil [EDUCATION] ${entry.title.slice(0,15)}.title di /`, pages["/"], entry.title);
-          check(`profil [EDUCATION] ${entry.title.slice(0,15)}.title di /cv`, pages["/cv"], entry.title);
-        }
-      }
-      // field detail hanya wajib di /rekam-jejak (CV ATS minimalis, beranda minimalis)
-      for (const f of ["subtitle","description","meta","url","period","location"]) {
-        if (entry[f] && entry[f].toString().trim()) {
-          check(`profil [${sec.kind}] ${entry.title.slice(0,15)}.${f} di /rekam-jejak`, pages["/rekam-jejak"], entry[f]);
-          if (sec.kind === "EDUCATION" && ["subtitle","period"].includes(f)) {
-            check(`profil [EDUCATION] ${entry.title.slice(0,15)}.${f} di /cv`, pages["/cv"], entry[f]);
-          }
-        }
-      }
-    }
+    if (a.readTime) check(`artikel ${a.slug}.readTime`, pages["/"], String(a.readTime));
   }
 
   // KONFIGURASI
   const cfg = db.siteConfig;
-  for (const f of ["fullName","headline","bio","location","email","phone","website","github","linkedin","cvVersion","education"]) {
+  for (const f of [
+    "fullName",
+    "headline",
+    "bio",
+    "location",
+    "address",
+    "email",
+    "phone",
+    "website",
+    "github",
+    "linkedin",
+    "education",
+    "pronouns",
+    "coverImageUrl"
+  ]) {
     if (cfg[f] && cfg[f].toString().trim()) {
       const inAny = Object.values(pages).some(h => inHtml(h, cfg[f]));
       if (inAny) ok++; else { bug++; bugs.push(`konfigurasi ${f}: "${cfg[f]}"`); }
     }
+    if (cfg.resumeUrl) check("CV PDF terunggah di /cv", pages["/cv"], cfg.resumeUrl);
+    else check("keadaan CV belum diunggah di /cv", pages["/cv"], "CV belum diunggah");
   }
 
   console.log(`HASIL: ${ok} field terisi dan tampil, ${bug} bug`);
@@ -146,5 +180,5 @@ function inHtml(html, text) {
   } else {
     console.log("\nNOL BUG — semua field yang terisi di CMS tampil di web.");
   }
-  process.exit(bug === 0 ? 0 : 1);
+  process.exitCode = bug === 0 ? 0 : 1;
 })();

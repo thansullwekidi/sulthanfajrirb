@@ -1,6 +1,6 @@
 /**
  * Uji end-to-end bagian "Jeda Karier" (Career Break) — bagian terakhir dari
- * daftar resmi "Add profile section" LinkedIn yang belum ada di proyek.
+ * daftar bagian profil yang aktif.
  */
 const BASE = "http://localhost:3000";
 
@@ -54,12 +54,13 @@ async function snapshot() {
   const career = snap.database.profileSections.find((s) => s.kind === "CAREER_BREAK");
   check("bagian Jeda Karier tersedia", Boolean(career), "tidak ditemukan");
   if (!career) process.exit(1);
+  const baselineEntryIds = new Set(career.entries.map((entry) => entry.id));
 
   check("bagian Jeda Karier terlihat publik", career.visible === true);
 
   console.log("\n== DAFTAR JENIS JEDA LINKEDIN ==");
   const totalSections = snap.database.profileSections.length;
-  check("jumlah bagian profil 17", totalSections === 17, String(totalSections));
+  check("jumlah bagian profil 15", totalSections === 15, String(totalSections));
 
   const kinds = snap.database.profileSections.map((s) => s.kind);
   const expected = [
@@ -72,14 +73,12 @@ async function snapshot() {
     "PATENTS",
     "TEST_SCORES",
     "VOLUNTEER",
-    "PROJECTS",
     "CAREER_BREAK",
     "CAUSES",
     "INTERESTS",
     "FEATURED",
     "ACTIVITY",
     "SERVICES",
-    "RECOMMENDATIONS"
   ];
   const missing = expected.filter((kind) => !kinds.includes(kind));
   check("semua jenis bagian LinkedIn tersedia", missing.length === 0, missing.join(", "));
@@ -128,11 +127,13 @@ async function snapshot() {
   );
 
   console.log("\n== RENDER PUBLIK ==");
-  const rekam = await (await fetch(`${BASE}/rekam-jejak`)).text();
-  check("rekam jejak memuat bagian Jeda Karier", rekam.includes("Jeda Karier"));
-  check("rekam jejak memuat jenis jeda", rekam.includes("Mengasuh Anak Penuh Waktu"));
-  check("rekam jejak memuat deskripsi jeda", rekam.includes("mendampingi keluarga"));
-  check("rekam jejak memuat keahlian jeda", rekam.includes("Manajemen Waktu"));
+  const oldRoute = await fetch(`${BASE}/rekam-jejak`, { redirect: "manual" });
+  check("rute lama rekam jejak dialihkan", oldRoute.status === 307);
+  const home = await (await fetch(`${BASE}/`)).text();
+  check("beranda memuat bagian Jeda Karier", home.includes("Jeda Karier"));
+  check("beranda memuat jenis jeda", home.includes("Mengasuh Anak Penuh Waktu"));
+  check("beranda memuat deskripsi jeda", home.includes("mendampingi keluarga"));
+  check("beranda memuat keahlian jeda", home.includes("Manajemen Waktu"));
 
   console.log("\n== PEMBERSIHAN ==");
   const del = await call("POST", "/api/v1/profile", {
@@ -143,13 +144,17 @@ async function snapshot() {
   check("hapus entri jeda karier", del.json.ok === true);
 
   snap = await snapshot();
+  const remainingEntryIds = snap.database.profileSections
+    .find((s) => s.kind === "CAREER_BREAK")
+    .entries.map((item) => item.id);
   check(
-    "bagian Jeda Karier kembali kosong",
-    snap.database.profileSections.find((s) => s.kind === "CAREER_BREAK").entries.length === 0
+    "entri Jeda Karier awal tetap tersimpan",
+    [...baselineEntryIds].every((id) => remainingEntryIds.includes(id)) &&
+      !remainingEntryIds.includes(entryId)
   );
 
   console.log(`\nHASIL: ${pass} lolos, ${fail} gagal\n`);
-  process.exit(fail === 0 ? 0 : 1);
+  process.exitCode = fail === 0 ? 0 : 1;
 })().catch((error) => {
   console.error("Kesalahan uji:", error);
   process.exit(1);

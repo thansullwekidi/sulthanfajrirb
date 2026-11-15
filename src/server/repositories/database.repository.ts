@@ -4,24 +4,20 @@ import type {
   AuditLog,
   Database,
   Inquiry,
-  Project
+  MediaAsset
 } from "@/contracts/domain";
 import type { DatabaseImport } from "@/contracts/database.contract";
 import { readingTimeFrom } from "@/contracts/primitives";
 import { buildSeedDatabase } from "@/server/db/seed";
 import { readDatabase, withTransaction } from "@/server/db/store";
-import { DomainError } from "@/server/errors";
-import { normalizeSortOrder } from "./project.repository";
 import { appendAudit, createCommitHash } from "./audit.repository";
+import { detachMediaReferences, purgeMediaFiles } from "./media.repository";
 
 export async function buildAdminSnapshot(): Promise<AdminSnapshot> {
   const database = await readDatabase();
   return {
     database,
     counts: {
-      projectsPublished: database.projects.filter((p) => p.status === "PUBLISHED").length,
-      projectsDraft: database.projects.filter((p) => p.status === "DRAFT").length,
-      projectsArchived: database.projects.filter((p) => p.status === "ARCHIVED").length,
       articles: database.articles.length,
       skills: database.skills.length,
       profileSections: database.profileSections.length,
@@ -47,61 +43,8 @@ export async function exportDatabase(): Promise<{ database: Database; filename: 
   };
 }
 
-function mapImportedProject(
-  project: DatabaseImport["projects"][number],
-  index: number,
-  now: string
-): Project {
-  const status = project.status;
-  const timestamp = project.createdAt ?? now;
-  const archivedAt =
-    status === "ARCHIVED" ? (project.archivedAt ?? project.updatedAt ?? timestamp) : null;
-
-  return {
-    id: project.id,
-    slug: project.slug,
-    title: project.title,
-    subtitle: project.subtitle,
-    category: project.category,
-    techStack: project.techStack,
-    metricLabel: project.metricLabel,
-    metricValue: project.metricValue,
-    diagramType: project.diagramType,
-    codeSnippet: project.codeSnippet ?? "",
-    challenge: project.challenge,
-    solution: project.solution,
-    caseStudy: project.caseStudy ?? "",
-    links: project.links,
-    status,
-    isFeatured: status === "ARCHIVED" ? false : project.isFeatured,
-    sortOrder: project.sortOrder ?? index + 1,
-    commitHash: project.commitHash ?? createCommitHash(project.slug),
-    createdAt: timestamp,
-    updatedAt: project.updatedAt ?? timestamp,
-    archivedAt
-  };
-}
-
 export async function importDatabase(input: DatabaseImport): Promise<Database> {
   const now = new Date().toISOString();
-
-  const slugs = new Set<string>();
-  for (const project of input.projects) {
-    if (slugs.has(project.slug)) {
-      throw new DomainError(
-        422,
-        "IMPORT_DUPLICATE_SLUG",
-        `Berkas impor memuat slug ganda: "${project.slug}".`,
-        { projects: `Slug "${project.slug}" muncul lebih dari sekali.` }
-      );
-    }
-    slugs.add(project.slug);
-  }
-
-  const projects = input.projects.map((project, index) =>
-    mapImportedProject(project, index, now)
-  );
-  normalizeSortOrder(projects);
 
   const articles: Article[] = input.articles.map((article) => ({
     id: article.id,
@@ -112,6 +55,7 @@ export async function importDatabase(input: DatabaseImport): Promise<Database> {
     publishedAt: article.publishedAt || now.slice(0, 10),
     summary: article.summary,
     content: article.content,
+    externalUrl: article.externalUrl,
     status: article.status,
     createdAt: article.createdAt ?? now,
     updatedAt: article.updatedAt ?? article.createdAt ?? now
@@ -134,7 +78,6 @@ export async function importDatabase(input: DatabaseImport): Promise<Database> {
   const next: Database = {
     schemaVersion: 1,
     siteConfig: { ...input.siteConfig, updatedAt: now },
-    projects,
     experiences: input.experiences.map((experience, index) => ({
       id: experience.id,
       period: experience.period,
@@ -162,7 +105,6 @@ export async function importDatabase(input: DatabaseImport): Promise<Database> {
       issueDate: certification.issueDate,
       expiryDate: certification.expiryDate,
       credentialId: certification.credentialId,
-      verifyUrl: certification.verifyUrl,
       skills: certification.skills,
       imageUrl: certification.imageUrl,
       issuerLogoUrl: certification.issuerLogoUrl,
@@ -181,21 +123,6 @@ export async function importDatabase(input: DatabaseImport): Promise<Database> {
       createdAt: skill.createdAt ?? now
     })),
     articles,
-    testimonials: input.testimonials.map((testimonial, index) => ({
-      id: testimonial.id,
-      author: testimonial.author,
-      role: testimonial.role,
-      organization: testimonial.organization,
-      relationship: testimonial.relationship,
-      quote: testimonial.quote,
-      verifiedTag: testimonial.verifiedTag,
-      date: testimonial.date || now.slice(0, 10),
-      avatarUrl: testimonial.avatarUrl ?? "",
-      profileUrl: testimonial.profileUrl ?? "",
-      isVisible: testimonial.isVisible,
-      sortOrder: testimonial.sortOrder ?? index + 1,
-      createdAt: testimonial.createdAt ?? now
-    })),
     profileSections: (input.profileSections ?? buildSeedDatabase().profileSections).map(
       (section, index) => ({
         id: section.id,
@@ -253,51 +180,58 @@ export async function importDatabase(input: DatabaseImport): Promise<Database> {
     auditLogs
   };
 
-  return withTransaction((draft) => {
+  let removedMedia: MediaAsset[] = [];
+  const imported = await withTransaction((draft) => {
+    const replacementAssets = new Map(next.mediaAssets.map((asset) => [asset.id, asset.mimeType]));
+    removedMedia = draft.mediaAssets.filter(
+      (asset) => replacementAssets.get(asset.id) !== asset.mimeType
+    );
     draft.schemaVersion = 1;
     draft.siteConfig = next.siteConfig;
-    draft.projects = next.projects;
     draft.experiences = next.experiences;
     draft.certifications = next.certifications;
     draft.skills = next.skills;
     draft.articles = next.articles;
-    draft.testimonials = next.testimonials;
     draft.profileSections = next.profileSections;
     draft.socialLinks = next.socialLinks;
     draft.mediaAssets = next.mediaAssets;
     draft.inquiries = next.inquiries;
     draft.auditLogs = next.auditLogs;
+    detachMediaReferences(draft, new Set(removedMedia.map((asset) => asset.url)));
 
     appendAudit(draft, {
       action: "IMPORT",
       entityType: "DATABASE",
       entitySlug: "portofolio-json",
       commitHash: createCommitHash(`import:${Date.now()}`),
-      summary: `Mengimpor basis data: ${next.projects.length} proyek, ${next.articles.length} artikel, ${next.skills.length} keahlian.`
+      summary: `Mengimpor basis data: ${next.articles.length} artikel, ${next.skills.length} keahlian.`
     });
 
     return structuredClone(draft);
   });
+  await purgeMediaFiles(removedMedia);
+  return imported;
 }
 
 export async function resetDatabase(): Promise<Database> {
   const seed = buildSeedDatabase();
   seed.siteConfig.updatedAt = new Date().toISOString();
 
-  return withTransaction((draft) => {
+  let removedMedia: MediaAsset[] = [];
+  const reset = await withTransaction((draft) => {
+    removedMedia = [...draft.mediaAssets];
     draft.schemaVersion = 1;
     draft.siteConfig = seed.siteConfig;
-    draft.projects = seed.projects;
     draft.experiences = seed.experiences;
     draft.certifications = seed.certifications;
     draft.skills = seed.skills;
     draft.articles = seed.articles;
-    draft.testimonials = seed.testimonials;
     draft.profileSections = seed.profileSections;
     draft.socialLinks = seed.socialLinks;
     draft.mediaAssets = seed.mediaAssets;
     draft.inquiries = seed.inquiries;
     draft.auditLogs = seed.auditLogs;
+    detachMediaReferences(draft, new Set(removedMedia.map((asset) => asset.url)));
 
     appendAudit(draft, {
       action: "RESET",
@@ -309,18 +243,18 @@ export async function resetDatabase(): Promise<Database> {
 
     return structuredClone(draft);
   });
+  await purgeMediaFiles(removedMedia);
+  return reset;
 }
 
 /** Daftar ID entitas untuk keperluan diagnostik dan pengujian integritas. */
 export async function collectEntityIds(): Promise<Record<string, string[]>> {
   const database = await readDatabase();
   return {
-    projects: database.projects.map((item) => item.id),
     experiences: database.experiences.map((item) => item.id),
     certifications: database.certifications.map((item) => item.id),
     skills: database.skills.map((item) => item.id),
     articles: database.articles.map((item) => item.id),
-    testimonials: database.testimonials.map((item) => item.id),
     profileSections: database.profileSections.map((item) => item.id),
     socialLinks: database.socialLinks.map((item) => item.id),
     mediaAssets: database.mediaAssets.map((item) => item.id),

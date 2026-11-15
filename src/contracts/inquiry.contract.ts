@@ -28,7 +28,7 @@ export const inquiryInputSchema = z.object({
   senderEmail: emailField,
   organization: nonEmptyText("Instansi atau perusahaan", 2, 140),
   category: z.enum(INQUIRY_CATEGORIES, {
-    errorMap: () => ({ message: "Kategori keperluan tidak dikenali." })
+    error: "Kategori keperluan tidak dikenali."
   }),
   budgetTimeline: z.string().trim().max(80, "Rentang waktu terlalu panjang.").default(""),
   message: nonEmptyText("Pesan teknis", 30, 4000)

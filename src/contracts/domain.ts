@@ -5,25 +5,13 @@
 
 import { formatPeriod } from "./primitives";
 
-export const PROJECT_CATEGORIES = [
+export const SKILL_DOMAINS = [
   "REKAYASA_WEB",
   "MACHINE_LEARNING",
   "OTOMASI_SISTEM",
   "MEDIA_KREATIF"
 ] as const;
-export type ProjectCategory = (typeof PROJECT_CATEGORIES)[number];
-
-export const PROJECT_STATUSES = ["PUBLISHED", "DRAFT", "ARCHIVED"] as const;
-export type ProjectStatus = (typeof PROJECT_STATUSES)[number];
-
-export const DIAGRAM_TYPES = [
-  "WEB_ARCH",
-  "ML_PIPELINE",
-  "BROWSER_AUTOMATION",
-  "MEDIA_ENGINE",
-  "OAUTH_ROUTER"
-] as const;
-export type DiagramType = (typeof DIAGRAM_TYPES)[number];
+export type SkillDomain = (typeof SKILL_DOMAINS)[number];
 
 export const EXPERIENCE_TYPES = ["AKADEMIK", "PROYEK", "KARIER"] as const;
 export type ExperienceType = (typeof EXPERIENCE_TYPES)[number];
@@ -146,6 +134,7 @@ export const SOCIAL_PLATFORM_HINTS: Record<SocialPlatform, string> = {
 /** Jenis pemakaian aset media, dipakai untuk penamaan berkas dan audit. */
 export const MEDIA_PURPOSES = [
   "AVATAR",
+  "RESUME",
   "COVER",
   "CERTIFICATION",
   "EDUCATION_LOGO",
@@ -158,6 +147,7 @@ export type MediaPurpose = (typeof MEDIA_PURPOSES)[number];
 
 export const MEDIA_PURPOSE_LABELS: Record<MediaPurpose, string> = {
   AVATAR: "Foto Profil",
+  RESUME: "CV",
   COVER: "Foto Sampul",
   CERTIFICATION: "Foto Sertifikasi",
   EDUCATION_LOGO: "Logo Pendidikan",
@@ -169,6 +159,7 @@ export const MEDIA_PURPOSE_LABELS: Record<MediaPurpose, string> = {
 
 /** Batas unggah berkas media (byte). */
 export const MEDIA_MAX_BYTES = 2 * 1024 * 1024;
+export const RESUME_MAX_BYTES = 3 * 1024 * 1024;
 
 /** Tipe MIME yang diterima. SVG sengaja ditolak karena dapat memuat skrip. */
 export const MEDIA_ALLOWED_MIME = [
@@ -176,7 +167,8 @@ export const MEDIA_ALLOWED_MIME = [
   "image/jpeg",
   "image/webp",
   "image/gif",
-  "image/avif"
+  "image/avif",
+  "application/pdf"
 ] as const;
 export type MediaMime = (typeof MEDIA_ALLOWED_MIME)[number];
 
@@ -211,14 +203,12 @@ export const PROFILE_SECTION_KINDS = [
   "PATENTS",
   "TEST_SCORES",
   "VOLUNTEER",
-  "PROJECTS",
   "CAREER_BREAK",
   "CAUSES",
   "INTERESTS",
   "FEATURED",
   "ACTIVITY",
   "SERVICES",
-  "RECOMMENDATIONS",
   "CUSTOM"
 ] as const;
 export type ProfileSectionKind = (typeof PROFILE_SECTION_KINDS)[number];
@@ -233,14 +223,12 @@ export const PROFILE_SECTION_KIND_LABELS: Record<ProfileSectionKind, string> = {
   PATENTS: "Paten",
   TEST_SCORES: "Skor Tes",
   VOLUNTEER: "Pengalaman Relawan",
-  PROJECTS: "Proyek",
   CAREER_BREAK: "Jeda Karier",
   CAUSES: "Kepedulian",
   INTERESTS: "Minat",
   FEATURED: "Sorotan",
   ACTIVITY: "Aktivitas",
   SERVICES: "Layanan",
-  RECOMMENDATIONS: "Rekomendasi",
   CUSTOM: "Bagian Kustom"
 };
 
@@ -258,14 +246,12 @@ export const PROFILE_SECTION_LAYOUT: Record<ProfileSectionKind, ProfileSectionLa
   PATENTS: "LIST",
   TEST_SCORES: "LIST",
   VOLUNTEER: "TIMELINE",
-  PROJECTS: "GRID",
   CAREER_BREAK: "TIMELINE",
   CAUSES: "LIST",
   INTERESTS: "GRID",
   FEATURED: "GRID",
   ACTIVITY: "POSTS",
   SERVICES: "GRID",
-  RECOMMENDATIONS: "POSTS",
   CUSTOM: "LIST"
 };
 
@@ -422,21 +408,6 @@ export const PROFILE_ENTRY_LABELS: Record<ProfileSectionKind, ProfileEntryLabels
     logoLabel: "Logo Organisasi",
     urlLabel: "Tautan Organisasi"
   },
-  PROJECTS: {
-    title: "Nama Proyek",
-    subtitle: "Peran / Kontribusi",
-    meta: "",
-    description: "Deskripsi Proyek",
-    tags: "Keahlian",
-    showDates: true,
-    showLocation: false,
-    showUrl: true,
-    showImage: true,
-    imageLabel: "Tangkapan Layar Proyek",
-    logoLabel: "Logo Proyek",
-    urlLabel: "Tautan Proyek",
-    showAuthors: true
-  },
   CAREER_BREAK: {
     title: "Judul Entri",
     subtitle: "Keterangan Singkat",
@@ -510,19 +481,6 @@ export const PROFILE_ENTRY_LABELS: Record<ProfileSectionKind, ProfileEntryLabels
     imageLabel: "Gambar Layanan",
     urlLabel: "Tautan Pemesanan"
   },
-  RECOMMENDATIONS: {
-    title: "Nama Pemberi Rekomendasi",
-    subtitle: "Jabatan & Instansi",
-    meta: "Hubungan Kerja",
-    description: "Isi Rekomendasi",
-    tags: "",
-    showDates: true,
-    showLocation: false,
-    showUrl: true,
-    showImage: true,
-    imageLabel: "Foto Pemberi Rekomendasi",
-    urlLabel: "Tautan Profil"
-  },
   CUSTOM: {
     title: "Judul",
     subtitle: "Subjudul",
@@ -536,9 +494,6 @@ export const PROFILE_ENTRY_LABELS: Record<ProfileSectionKind, ProfileEntryLabels
     showAuthors: true
   }
 };
-
-export const SKILL_DOMAINS = PROJECT_CATEGORIES;
-export type SkillDomain = ProjectCategory;
 
 /**
  * Pilihan jenis jeda karier, mengikuti daftar resmi LinkedIn pada fitur
@@ -611,66 +566,21 @@ export const AUDIT_ACTIONS = [
 export type AuditAction = (typeof AUDIT_ACTIONS)[number];
 
 /**
- * Label tampilan netral untuk domain karya.
- * Kode enum tetap dipertahankan agar data lama dan impor tidak rusak.
+ * Label dan kode untuk kategori keahlian historis.
  */
-export const CATEGORY_LABELS: Record<ProjectCategory, string> = {
+export const SKILL_DOMAIN_LABELS: Record<SkillDomain, string> = {
   REKAYASA_WEB: "Web & Interaktif",
   MACHINE_LEARNING: "Data & Analitik",
   OTOMASI_SISTEM: "Sistem & Alur Kerja",
   MEDIA_KREATIF: "Media & Desain"
 };
 
-export const CATEGORY_CODES: Record<ProjectCategory, string> = {
+export const SKILL_DOMAIN_CODES: Record<SkillDomain, string> = {
   REKAYASA_WEB: "RW",
   MACHINE_LEARNING: "ML",
   OTOMASI_SISTEM: "OS",
   MEDIA_KREATIF: "MD"
 };
-
-export const STATUS_LABELS: Record<ProjectStatus, string> = {
-  PUBLISHED: "Terbit",
-  DRAFT: "Draf",
-  ARCHIVED: "Diarsipkan"
-};
-
-export const DIAGRAM_LABELS: Record<DiagramType, string> = {
-  WEB_ARCH: "Arsitektur Web Full-Stack",
-  ML_PIPELINE: "Pipeline Machine Learning",
-  BROWSER_AUTOMATION: "Otomasi Browser Terdistribusi",
-  MEDIA_ENGINE: "Mesin Media Digital",
-  OAUTH_ROUTER: "Router OAuth Multi-Tenant"
-};
-
-export interface ProjectLinks {
-  github: string;
-  live: string;
-  notebook: string;
-}
-
-export interface Project {
-  id: string;
-  slug: string;
-  title: string;
-  subtitle: string;
-  category: ProjectCategory;
-  techStack: string[];
-  metricLabel: string;
-  metricValue: string;
-  diagramType: DiagramType;
-  codeSnippet: string;
-  challenge: string;
-  solution: string;
-  caseStudy: string;
-  links: ProjectLinks;
-  status: ProjectStatus;
-  isFeatured: boolean;
-  sortOrder: number;
-  commitHash: string;
-  createdAt: string;
-  updatedAt: string;
-  archivedAt: string | null;
-}
 
 export interface Experience {
   id: string;
@@ -709,7 +619,6 @@ export interface Certification {
   issueDate: string;
   expiryDate: string;
   credentialId: string;
-  verifyUrl: string;
   skills: string[];
   /** Foto/citra sertifikat, diisi lewat unggahan media Studio. */
   imageUrl: string;
@@ -741,27 +650,10 @@ export interface Article {
   publishedAt: string;
   summary: string;
   content: string;
+  externalUrl: string;
   status: ArticleStatus;
   createdAt: string;
   updatedAt: string;
-}
-
-export interface Testimonial {
-  id: string;
-  author: string;
-  role: string;
-  organization: string;
-  relationship: string;
-  quote: string;
-  verifiedTag: string;
-  date: string;
-  /** Foto pemberi rekomendasi, diisi lewat unggahan media Studio. */
-  avatarUrl: string;
-  /** Tautan profil pemberi rekomendasi (LinkedIn atau situs resmi). */
-  profileUrl: string;
-  isVisible: boolean;
-  sortOrder: number;
-  createdAt: string;
 }
 
 /* --------------------------------------------------- BAGIAN PROFIL LINKEDIN */
@@ -792,7 +684,7 @@ export interface ProfileEntry {
   logoUrl: string;
   /** Penulis atau kontributor, dipakai jenis Publikasi dan Paten. */
   authors: string;
-  /** Penerbit / jurnal / kantor, terpisah dari subtitle agar dapat diurutkan. */
+  /** Penerbit / instansi, terpisah dari subtitle agar dapat diurutkan. */
   publisher: string;
   tags: string[];
   visible: boolean;
@@ -840,19 +732,82 @@ export interface SiteConfig {
   avatarUrl: string;
   coverImageUrl: string;
   pronouns: string;
-  connections: number;
-  followers: number;
   availability: boolean;
   availabilityNote: string;
   openToWork: boolean;
   openToWorkNote: string;
-  cvVersion: string;
-  cvMaxExperiences: number;
-  cvMaxProjects: number;
-  cvMaxCertifications: number;
+  resumeUrl: string;
   education: string;
+  homepageSections: HomepageSections;
   updatedAt: string;
 }
+
+export interface HomepageSections {
+  hero: {
+    visible: boolean;
+    eyebrow: string;
+    primaryCtaLabel: string;
+    contactCtaLabel: string;
+    repositoryCtaLabel: string;
+  };
+  experienceTimeline: {
+    visible: boolean;
+    title: string;
+    description: string;
+  };
+  certifications: {
+    visible: boolean;
+    title: string;
+    description: string;
+  };
+  skills: {
+    visible: boolean;
+    title: string;
+    description: string;
+    featuredLabel: string;
+  };
+  publications: {
+    visible: boolean;
+    title: string;
+    description: string;
+    linkLabel: string;
+  };
+}
+
+export const DEFAULT_HOMEPAGE_SECTIONS: HomepageSections = {
+  hero: {
+    visible: true,
+    eyebrow: "Dossier Desain / Edisi 2026",
+    primaryCtaLabel: "Lihat CV",
+    contactCtaLabel: "Kirim Diskusi",
+    repositoryCtaLabel: "Repositori"
+  },
+  experienceTimeline: {
+    visible: true,
+    title: "Linimasa yang Dapat Ditelusuri",
+    description:
+      "Riwayat pengalaman profesional dan akademik yang dicatat secara terstruktur."
+  },
+  certifications: {
+    visible: true,
+    title: "Sertifikasi",
+    description:
+      "Sertifikat dilampirkan sebagai foto yang diunggah melalui Studio CMS."
+  },
+  skills: {
+    visible: true,
+    title: "Media & Desain",
+    description:
+      "Keahlian kreatif yang digunakan dalam produksi desain grafis, visual, dan media.",
+    featuredLabel: "Keahlian Unggulan"
+  },
+  publications: {
+    visible: true,
+    title: "Publikasi Artikel",
+    description: "Artikel dan tulisan yang dipublikasikan.",
+    linkLabel: "Buka artikel"
+  }
+};
 
 export interface AuditLog {
   id: string;
@@ -935,12 +890,10 @@ export function resolveEducation(
 
 export interface Database {
   schemaVersion: number;
-  projects: Project[];
   experiences: Experience[];
   certifications: Certification[];
   skills: Skill[];
   articles: Article[];
-  testimonials: Testimonial[];
   profileSections: ProfileSection[];
   socialLinks: SocialLink[];
   mediaAssets: MediaAsset[];
@@ -953,15 +906,11 @@ export type CollectionName =
   | "experiences"
   | "certifications"
   | "skills"
-  | "articles"
-  | "testimonials";
+  | "articles";
 
 export interface AdminSnapshot {
   database: Database;
   counts: {
-    projectsPublished: number;
-    projectsDraft: number;
-    projectsArchived: number;
     articles: number;
     skills: number;
     profileSections: number;

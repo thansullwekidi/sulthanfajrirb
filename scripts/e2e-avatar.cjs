@@ -95,7 +95,7 @@ async function call(method, path, body) {
   );
 
   console.log(`\nHASIL: ${pass} lolos, ${fail} gagal\n`);
-  process.exit(fail === 0 ? 0 : 1);
+  process.exitCode = fail === 0 ? 0 : 1;
 })().catch((error) => {
   console.error(error);
   process.exit(1);

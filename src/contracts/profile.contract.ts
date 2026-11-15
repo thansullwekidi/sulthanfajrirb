@@ -18,7 +18,7 @@ export const profileSectionInputSchema = z.object({
   title: nonEmptyText("Nama bagian", 2, 80),
   subtitle: z.string().trim().max(180, "Subjudul bagian terlalu panjang.").default(""),
   kind: z.enum(PROFILE_SECTION_KINDS, {
-    errorMap: () => ({ message: "Jenis bagian tidak dikenali." })
+    error: "Jenis bagian tidak dikenali."
   }),
   visible: z.boolean().default(true)
 });
@@ -66,7 +66,7 @@ export const profileEntryInputSchema = profileEntryBaseSchema.superRefine((value
 const sectionId = z.string().trim().min(4, "ID bagian tidak valid.");
 const entryId = z.string().trim().min(4, "ID entri tidak valid.");
 const direction = z.enum(["UP", "DOWN"], {
-  errorMap: () => ({ message: "Arah perpindahan tidak valid." })
+  error: "Arah perpindahan tidak valid."
 });
 
 export const profileMutationSchema = z.discriminatedUnion("action", [

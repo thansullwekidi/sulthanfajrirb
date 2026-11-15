@@ -16,22 +16,16 @@ interface PaletteItem {
 
 const PALETTE_ITEMS: PaletteItem[] = [
   { id: "nav-ringkasan", label: "Ringkasan Eksekutif", group: "Navigasi", hint: "01", href: "/", keywords: "beranda home kpi" },
-  { id: "nav-katalog", label: "Katalog Karya", group: "Navigasi", hint: "02", href: "/karya", keywords: "proyek projek portofolio" },
-  { id: "nav-rekam", label: "Rekam Jejak & Keahlian", group: "Navigasi", hint: "03", href: "/rekam-jejak", keywords: "sertifikasi stack pengalaman pendidikan bahasa" },
-  { id: "nav-jurnal", label: "Catatan Lab", group: "Navigasi", hint: "04", href: "/catatan-lab", keywords: "artikel jurnal tulisan" },
-  { id: "nav-cv", label: "CV ATS 1 Halaman", group: "Navigasi", hint: "05", href: "/cv", keywords: "resume cetak pdf" },
-  { id: "nav-kontak", label: "Kontak & Diskusi", group: "Navigasi", hint: "06", href: "/kontak", keywords: "email pesan formulir" },
-  { id: "cms-proyek", label: "Manajer Proyek", group: "Studio CMS", hint: "01", href: "/admin#proyek", keywords: "crud edit split editor" },
-  { id: "cms-sampah", label: "Tempat Sampah", group: "Studio CMS", hint: "02", href: "/admin#sampah", keywords: "trash arsip purge" },
-  { id: "cms-rekam", label: "Rekam Jejak & Sertifikasi", group: "Studio CMS", hint: "03", href: "/admin#rekam-jejak", keywords: "pengalaman sertifikat" },
-  { id: "cms-profil", label: "Bagian Profil LinkedIn", group: "Studio CMS", hint: "04", href: "/admin#profil", keywords: "pendidikan bahasa organisasi penghargaan publikasi paten relawan sorotan minat" },
-  { id: "cms-stack", label: "Tech Stack", group: "Studio CMS", hint: "05", href: "/admin#tech-stack", keywords: "keahlian skill endorsements" },
-  { id: "cms-jurnal", label: "Jurnal Lab", group: "Studio CMS", hint: "06", href: "/admin#jurnal", keywords: "artikel tulis" },
-  { id: "cms-testimoni", label: "Rekomendasi", group: "Studio CMS", hint: "07", href: "/admin#rekomendasi", keywords: "testimoni endorsements" },
-  { id: "cms-inbox", label: "Kotak Masuk", group: "Studio CMS", hint: "08", href: "/admin#kotak-masuk", keywords: "pesan inbox unread" },
-  { id: "cms-media", label: "Media & Media Sosial", group: "Studio CMS", hint: "10", href: "/admin#media-sosial", keywords: "instagram linkedin behance unggah gambar pustaka foto logo" },
-  { id: "cms-config", label: "Konfigurasi & Basis Data", group: "Studio CMS", hint: "11", href: "/admin#konfigurasi", keywords: "backup json import export reset identitas" },
-  { id: "cms-audit", label: "Log Audit Sistem", group: "Studio CMS", hint: "12", href: "/admin#audit", keywords: "riwayat mutasi" }
+  { id: "nav-cv", label: "CV PDF", group: "Navigasi", hint: "02", href: "/cv", keywords: "resume unduh pdf" },
+  { id: "nav-kontak", label: "Kontak & Diskusi", group: "Navigasi", hint: "03", href: "/kontak", keywords: "email pesan formulir" },
+  { id: "cms-rekam", label: "Pengalaman & Sertifikasi", group: "Studio CMS", hint: "01", href: "/admin#rekam-jejak", keywords: "linimasa sertifikat pengalaman" },
+  { id: "cms-profil", label: "Bagian Profil LinkedIn", group: "Studio CMS", hint: "02", href: "/admin#profil", keywords: "pendidikan bahasa organisasi penghargaan publikasi paten relawan sorotan minat" },
+  { id: "cms-stack", label: "Media & Desain", group: "Studio CMS", hint: "03", href: "/admin#tech-stack", keywords: "keahlian skill endorsements" },
+  { id: "cms-publikasi", label: "Publikasi Artikel Beranda", group: "Studio CMS", hint: "04", href: "/admin#publikasi", keywords: "artikel publikasi tautan beranda" },
+  { id: "cms-inbox", label: "Kotak Masuk", group: "Studio CMS", hint: "05", href: "/admin#kotak-masuk", keywords: "pesan inbox unread" },
+  { id: "cms-media", label: "Media & Media Sosial", group: "Studio CMS", hint: "06", href: "/admin#media-sosial", keywords: "instagram linkedin behance unggah gambar pustaka foto logo" },
+  { id: "cms-config", label: "Konfigurasi & Basis Data", group: "Studio CMS", hint: "07", href: "/admin#konfigurasi", keywords: "backup json import export reset identitas" },
+  { id: "cms-audit", label: "Log Audit Sistem", group: "Studio CMS", hint: "08", href: "/admin#audit", keywords: "riwayat mutasi" }
 ];
 
 export function CommandPalette() {
@@ -70,11 +64,11 @@ export function CommandPalette() {
         action: toggleTheme
       },
       {
-        id: "act-cv-print",
-        label: "Buka CV & Cetak PDF",
+        id: "act-cv-pdf",
+        label: "Buka CV PDF",
         group: "Tindakan",
-        hint: "Cetak",
-        keywords: "print resume",
+        hint: "Unggahan CMS",
+        keywords: "resume unduh dokumen",
         href: "/cv"
       }
     ],
@@ -200,7 +194,7 @@ export function CommandPalette() {
         <div className="palette__list" role="listbox" aria-label="Hasil perintah">
           {filtered.length === 0 ? (
             <div className="palette__empty">
-              Tidak ada hasil untuk “{query}”. Coba kata kunci lain seperti “proyek” atau “backup”.
+              Tidak ada hasil untuk “{query}”. Coba kata kunci lain seperti “publikasi” atau “backup”.
             </div>
           ) : (
             groups.map((group) => {

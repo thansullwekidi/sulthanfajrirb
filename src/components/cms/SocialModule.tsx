@@ -229,7 +229,7 @@ export function SocialModule({
           <p className="admin-head__sub">
             Kelola tautan media sosial yang tampil di profil publik — tambah, ubah, urutkan,
             sembunyikan, atau hapus. Pustaka media menampung seluruh gambar yang diunggah dari
-            modul Konfigurasi, Rekam Jejak, dan Bagian Profil.
+            modul Konfigurasi, Pengalaman & Sertifikasi, dan Bagian Profil.
           </p>
         </div>
         <div style={{ display: "flex", gap: 6 }}>
@@ -447,12 +447,25 @@ export function SocialModule({
                         overflow: "hidden"
                       }}
                     >
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img
-                        src={asset.url}
-                        alt={asset.fileName}
-                        style={{ width: "100%", height: "100%", objectFit: "cover" }}
-                      />
+                      {asset.mimeType === "application/pdf" ? (
+                        <a
+                          href={asset.url}
+                          target="_blank"
+                          rel="noreferrer noopener"
+                          aria-label={`Pratinjau ${asset.fileName}`}
+                          style={{ display: "grid", placeItems: "center", gap: 8 }}
+                        >
+                          <Icon name="file" size={28} />
+                          <span className="mono" style={{ fontSize: 8 }}>PDF</span>
+                        </a>
+                      ) : (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img
+                          src={asset.url}
+                          alt={asset.fileName}
+                          style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                        />
+                      )}
                     </div>
                     <div style={{ padding: 8, display: "grid", gap: 6 }}>
                       <span
@@ -508,7 +521,7 @@ export function SocialModule({
           description={
             deleteTarget.kind === "social"
               ? "Tautan akan hilang dari profil publik. Tindakan ini menulis entri PURGE permanen pada log audit."
-              : "Berkas gambar dihapus dari penyimpanan. Gambar yang masih dirujuk entri lain akan tampil kosong. Tindakan ini menulis entri PURGE permanen pada log audit."
+              : "Berkas dihapus permanen dari penyimpanan dan semua referensi yang menggunakannya dilepas dari situs. Tindakan ini menulis entri PURGE pada log audit."
           }
           confirmLabel="Hapus"
           tone="danger"

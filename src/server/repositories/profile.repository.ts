@@ -84,7 +84,11 @@ function moveItem<T extends { sortOrder: number }>(items: T[], id: string, direc
 
 export async function listProfileSections(visibleOnly = false): Promise<ProfileSection[]> {
   const sections = sortByOrder((await readDatabase()).profileSections);
-  const scoped = visibleOnly ? sections.filter((section) => section.visible) : sections;
+  const scoped = visibleOnly
+    ? sections.filter(
+        (section) => section.visible && section.entries.some((entry) => entry.visible)
+      )
+    : sections;
   return scoped.map((section) => ({
     ...section,
     entries: sortByOrder(section.entries).filter((entry) => (visibleOnly ? entry.visible : true))

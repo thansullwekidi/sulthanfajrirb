@@ -2,7 +2,7 @@ import { z } from "zod";
 
 export const loginSchema = z.object({
   passphrase: z
-    .string({ required_error: "Frasa sandi wajib diisi." })
+    .string({ error: "Frasa sandi wajib diisi." })
     .min(4, "Frasa sandi minimal 4 karakter.")
 });
 

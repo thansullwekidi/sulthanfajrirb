@@ -1,13 +1,28 @@
-import type { Database } from "@/contracts/domain";
+import { DEFAULT_HOMEPAGE_SECTIONS, type Database, type ProfileSection } from "@/contracts/domain";
 
-/**
- * Keadaan awal basis data — profil desain grafis Muhammad Sulthan Fajri Rabbani.
- * Reset mengembalikan basis data ke keadaan ini, bukan ke data demo rekayasa lama.
- */
+const now = "2026-11-15T00:00:00.000Z";
+
+const profileSections: Omit<ProfileSection, "createdAt" | "updatedAt" | "entries">[] = [
+  { id: "prf_pendidikan", slug: "pendidikan", title: "Pendidikan", subtitle: "Riwayat akademik formal", kind: "EDUCATION", visible: true, sortOrder: 1 },
+  { id: "prf_mata-kuliah", slug: "mata-kuliah", title: "Mata Kuliah", subtitle: "Rangkaian studi yang ditempuh", kind: "COURSES", visible: true, sortOrder: 2 },
+  { id: "prf_bahasa", slug: "bahasa", title: "Bahasa", subtitle: "Kemampuan bahasa", kind: "LANGUAGES", visible: true, sortOrder: 3 },
+  { id: "prf_organisasi", slug: "organisasi", title: "Organisasi", subtitle: "Peran dan keanggotaan", kind: "ORGANIZATIONS", visible: true, sortOrder: 4 },
+  { id: "prf_penghargaan", slug: "penghargaan", title: "Penghargaan", subtitle: "Prestasi dan pengakuan", kind: "HONORS", visible: true, sortOrder: 5 },
+  { id: "prf_publikasi", slug: "publikasi", title: "Publikasi", subtitle: "Karya tulis dan terbitan", kind: "PUBLICATIONS", visible: true, sortOrder: 6 },
+  { id: "prf_paten", slug: "paten", title: "Paten", subtitle: "Hak kekayaan intelektual", kind: "PATENTS", visible: true, sortOrder: 7 },
+  { id: "prf_skor-tes", slug: "skor-tes", title: "Skor Tes", subtitle: "Hasil uji kemampuan", kind: "TEST_SCORES", visible: true, sortOrder: 8 },
+  { id: "prf_relawan", slug: "relawan", title: "Pengalaman Relawan", subtitle: "Kontribusi sosial dan komunitas", kind: "VOLUNTEER", visible: true, sortOrder: 9 },
+  { id: "prf_jeda-karier", slug: "jeda-karier", title: "Jeda Karier", subtitle: "Waktu di luar jalur karier linear", kind: "CAREER_BREAK", visible: true, sortOrder: 10 },
+  { id: "prf_kepedulian", slug: "kepedulian", title: "Kepedulian", subtitle: "Isu yang diperjuangkan", kind: "CAUSES", visible: true, sortOrder: 11 },
+  { id: "prf_sorotan", slug: "sorotan", title: "Sorotan", subtitle: "Karya dan tautan pilihan", kind: "FEATURED", visible: true, sortOrder: 12 },
+  { id: "prf_aktivitas", slug: "aktivitas", title: "Aktivitas", subtitle: "Catatan dan unggahan terbaru", kind: "ACTIVITY", visible: true, sortOrder: 13 },
+  { id: "prf_minat", slug: "minat", title: "Minat", subtitle: "Topik, organisasi, dan tokoh yang diikuti", kind: "INTERESTS", visible: true, sortOrder: 14 },
+  { id: "prf_layanan", slug: "layanan", title: "Layanan", subtitle: "Jasa yang dapat dipesan", kind: "SERVICES", visible: true, sortOrder: 15 }
+];
+
+/** Baseline profil yang tersedia di repositori; data CMS terbaru yang terhapus tidak dapat direkonstruksi. */
 export function buildSeedDatabase(): Database {
-  const now = "2026-11-15T00:00:00.000Z";
-
-  return {
+  const database: Database = {
     schemaVersion: 1,
     siteConfig: {
       fullName: "Muhammad Sulthan Fajri Rabbani",
@@ -24,20 +39,15 @@ export function buildSeedDatabase(): Database {
       avatarUrl: "",
       coverImageUrl: "",
       pronouns: "",
-      connections: 7,
-      followers: 8,
       availability: true,
       availabilityNote: "",
       openToWork: false,
       openToWorkNote: "",
-      cvVersion: "2026.2",
-      cvMaxExperiences: 3,
-      cvMaxProjects: 3,
-      cvMaxCertifications: 3,
+      resumeUrl: "",
       education: "UIN Sultan Maulana Hasanuddin Banten",
+      homepageSections: structuredClone(DEFAULT_HOMEPAGE_SECTIONS),
       updatedAt: now
     },
-    projects: [],
     experiences: [
       {
         id: "exp_tvri_desain",
@@ -108,11 +118,11 @@ export function buildSeedDatabase(): Database {
         ["Komunikasi", "Koordinasi kerja redaksi dan produksi media."],
         ["Adobe Photoshop", "Pengolahan gambar dan retouching."],
         ["After Effects", "Animasi dan olah gerak untuk materi siar."]
-      ] as ReadonlyArray<readonly [string, string]>
+      ] as const
     ).map(([name, context], index) => ({
       id: `sk_desain_${String(index + 1).padStart(2, "0")}`,
       name,
-      category: "MEDIA_KREATIF" as const,
+      category: "MEDIA_KREATIF",
       level: 75,
       context,
       endorsements: 0,
@@ -121,236 +131,38 @@ export function buildSeedDatabase(): Database {
       createdAt: now
     })),
     articles: [],
-    testimonials: [],
-    profileSections: [
-      {
-        id: "prf_pendidikan",
-        slug: "pendidikan",
-        title: "Pendidikan",
-        subtitle: "Riwayat akademik formal",
-        kind: "EDUCATION",
-        visible: true,
-        sortOrder: 1,
-        entries: [
-          {
-            id: "prf_edu_uin",
-            title: "UIN Sultan Maulana Hasanuddin Banten",
-            subtitle: "",
-            meta: "",
-            location: "Banten, Indonesia",
-            startDate: "",
-            endDate: "",
-            isCurrent: true,
-            description: "",
-            fieldOfStudy: "",
-            notes: "",
-            url: "",
-            imageUrl: "",
-            logoUrl: "",
-            authors: "",
-            publisher: "",
-            tags: [],
-            visible: true,
-            sortOrder: 1,
-            createdAt: now
-          }
-        ],
-        createdAt: now,
-        updatedAt: now
-      },
-      {
-        id: "prf_mata-kuliah",
-        slug: "mata-kuliah",
-        title: "Mata Kuliah",
-        subtitle: "Rangkaian studi yang ditempuh",
-        kind: "COURSES",
-        visible: true,
-        sortOrder: 2,
-        entries: [],
-        createdAt: now,
-        updatedAt: now
-      },
-      {
-        id: "prf_bahasa",
-        slug: "bahasa",
-        title: "Bahasa",
-        subtitle: "Kemampuan bahasa",
-        kind: "LANGUAGES",
-        visible: true,
-        sortOrder: 3,
-        entries: [],
-        createdAt: now,
-        updatedAt: now
-      },
-      {
-        id: "prf_organisasi",
-        slug: "organisasi",
-        title: "Organisasi",
-        subtitle: "Peran dan keanggotaan",
-        kind: "ORGANIZATIONS",
-        visible: true,
-        sortOrder: 4,
-        entries: [],
-        createdAt: now,
-        updatedAt: now
-      },
-      {
-        id: "prf_penghargaan",
-        slug: "penghargaan",
-        title: "Penghargaan",
-        subtitle: "Prestasi dan pengakuan",
-        kind: "HONORS",
-        visible: true,
-        sortOrder: 5,
-        entries: [],
-        createdAt: now,
-        updatedAt: now
-      },
-      {
-        id: "prf_publikasi",
-        slug: "publikasi",
-        title: "Publikasi",
-        subtitle: "Karya tulis dan terbitan",
-        kind: "PUBLICATIONS",
-        visible: true,
-        sortOrder: 6,
-        entries: [],
-        createdAt: now,
-        updatedAt: now
-      },
-      {
-        id: "prf_paten",
-        slug: "paten",
-        title: "Paten",
-        subtitle: "Hak kekayaan intelektual",
-        kind: "PATENTS",
-        visible: true,
-        sortOrder: 7,
-        entries: [],
-        createdAt: now,
-        updatedAt: now
-      },
-      {
-        id: "prf_skor-tes",
-        slug: "skor-tes",
-        title: "Skor Tes",
-        subtitle: "Hasil uji kemampuan",
-        kind: "TEST_SCORES",
-        visible: true,
-        sortOrder: 8,
-        entries: [],
-        createdAt: now,
-        updatedAt: now
-      },
-      {
-        id: "prf_relawan",
-        slug: "relawan",
-        title: "Pengalaman Relawan",
-        subtitle: "Kontribusi sosial dan komunitas",
-        kind: "VOLUNTEER",
-        visible: true,
-        sortOrder: 9,
-        entries: [],
-        createdAt: now,
-        updatedAt: now
-      },
-      {
-        id: "prf_proyek",
-        slug: "proyek",
-        title: "Proyek",
-        subtitle: "Karya yang dikerjakan langsung",
-        kind: "PROJECTS",
-        visible: true,
-        sortOrder: 10,
-        entries: [],
-        createdAt: now,
-        updatedAt: now
-      },
-      {
-        id: "prf_jeda-karier",
-        slug: "jeda-karier",
-        title: "Jeda Karier",
-        subtitle: "Waktu di luar jalur karier linear",
-        kind: "CAREER_BREAK",
-        visible: true,
-        sortOrder: 11,
-        entries: [],
-        createdAt: now,
-        updatedAt: now
-      },
-      {
-        id: "prf_kepedulian",
-        slug: "kepedulian",
-        title: "Kepedulian",
-        subtitle: "Isu yang diperjuangkan",
-        kind: "CAUSES",
-        visible: true,
-        sortOrder: 12,
-        entries: [],
-        createdAt: now,
-        updatedAt: now
-      },
-      {
-        id: "prf_sorotan",
-        slug: "sorotan",
-        title: "Sorotan",
-        subtitle: "Karya dan tautan pilihan",
-        kind: "FEATURED",
-        visible: true,
-        sortOrder: 13,
-        entries: [],
-        createdAt: now,
-        updatedAt: now
-      },
-      {
-        id: "prf_aktivitas",
-        slug: "aktivitas",
-        title: "Aktivitas",
-        subtitle: "Catatan dan unggahan terbaru",
-        kind: "ACTIVITY",
-        visible: true,
-        sortOrder: 14,
-        entries: [],
-        createdAt: now,
-        updatedAt: now
-      },
-      {
-        id: "prf_minat",
-        slug: "minat",
-        title: "Minat",
-        subtitle: "Topik, organisasi, dan tokoh yang diikuti",
-        kind: "INTERESTS",
-        visible: true,
-        sortOrder: 15,
-        entries: [],
-        createdAt: now,
-        updatedAt: now
-      },
-      {
-        id: "prf_layanan",
-        slug: "layanan",
-        title: "Layanan",
-        subtitle: "Jasa yang dapat dipesan",
-        kind: "SERVICES",
-        visible: true,
-        sortOrder: 16,
-        entries: [],
-        createdAt: now,
-        updatedAt: now
-      },
-      {
-        id: "prf_rekomendasi",
-        slug: "rekomendasi",
-        title: "Rekomendasi",
-        subtitle: "Kata orang lain tentang kerja sama",
-        kind: "RECOMMENDATIONS",
-        visible: true,
-        sortOrder: 17,
-        entries: [],
-        createdAt: now,
-        updatedAt: now
-      }
-    ],
+    profileSections: profileSections.map((section) => ({
+      ...section,
+      entries:
+        section.kind === "EDUCATION"
+          ? [
+              {
+                id: "prf_edu_uin",
+                title: "UIN Sultan Maulana Hasanuddin Banten",
+                subtitle: "",
+                meta: "",
+                location: "Banten, Indonesia",
+                startDate: "",
+                endDate: "",
+                isCurrent: true,
+                description: "",
+                fieldOfStudy: "",
+                notes: "",
+                url: "",
+                imageUrl: "",
+                logoUrl: "",
+                authors: "",
+                publisher: "",
+                tags: [],
+                visible: true,
+                sortOrder: 1,
+                createdAt: now
+              }
+            ]
+          : [],
+      createdAt: now,
+      updatedAt: now
+    })),
     socialLinks: [],
     mediaAssets: [],
     inquiries: [],
@@ -366,4 +178,6 @@ export function buildSeedDatabase(): Database {
       }
     ]
   };
+
+  return structuredClone(database);
 }

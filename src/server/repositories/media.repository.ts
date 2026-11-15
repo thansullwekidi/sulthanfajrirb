@@ -1,32 +1,38 @@
 import { promises as fs } from "node:fs";
 import path from "node:path";
-import type { MediaAsset, MediaMime, MediaPurpose } from "@/contracts/domain";
-import { MEDIA_ALLOWED_MIME, MEDIA_MAX_BYTES } from "@/contracts/domain";
+import type { Database, MediaAsset, MediaMime, MediaPurpose } from "@/contracts/domain";
+import {
+  MEDIA_ALLOWED_MIME,
+  MEDIA_MAX_BYTES,
+  RESUME_MAX_BYTES
+} from "@/contracts/domain";
 import { readDatabase, withTransaction } from "@/server/db/store";
+import { getSupabaseClient, isSupabaseConfigured } from "@/server/db/supabase";
 import { DomainError, notFound } from "@/server/errors";
 import { appendAudit, createCommitHash, createEntityId } from "./audit.repository";
 
-/**
- * Repositori media: berkas gambar disimpan di `.data/media` dan disajikan
- * melalui rute `/api/v1/media/[id]`, sehingga tidak bergantung pada folder
- * `public` yang bersifat statis setelah build produksi.
- */
+/** Supabase Storage in production; local files remain available for development. */
 
 const MEDIA_DIR =
   process.env.MEDIA_DIR && process.env.MEDIA_DIR.trim().length > 0
     ? process.env.MEDIA_DIR
     : path.join(process.cwd(), ".data", "media");
+const STORAGE_BUCKET = "portfolio-media";
 
 const EXTENSION: Record<MediaMime, string> = {
   "image/png": "png",
   "image/jpeg": "jpg",
   "image/webp": "webp",
   "image/gif": "gif",
-  "image/avif": "avif"
+  "image/avif": "avif",
+  "application/pdf": "pdf"
 };
 
 /** Deteksi tipe berkas dari magic bytes, bukan dari nama atau MIME klien. */
 function sniffMime(buffer: Buffer): MediaMime | null {
+  if (buffer.length >= 5 && buffer.subarray(0, 5).toString("ascii") === "%PDF-") {
+    return "application/pdf";
+  }
   if (buffer.length >= 8) {
     const png = buffer.subarray(0, 8);
     if (png.equals(Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]))) {
@@ -84,15 +90,30 @@ export async function listMediaAssets(): Promise<MediaAsset[]> {
 
 export async function readMediaFile(
   id: string
-): Promise<{ buffer: Buffer; mimeType: MediaMime }> {
+): Promise<{ buffer: Buffer; mimeType: MediaMime; fileName: string }> {
   const asset = (await readDatabase()).mediaAssets.find((item) => item.id === id);
   if (!asset) throw notFound("Media");
 
+  if (isSupabaseConfigured()) {
+    const { data, error } = await getSupabaseClient()
+      .storage.from(STORAGE_BUCKET)
+      .download(`${asset.id}.${EXTENSION[asset.mimeType]}`);
+    if (error) {
+      if (error.message.toLowerCase().includes("not found")) throw notFound("Berkas media");
+      throw new Error(`Gagal membaca media dari Supabase Storage: ${error.message}`);
+    }
+    const buffer = Buffer.from(await data.arrayBuffer());
+    return { buffer, mimeType: asset.mimeType, fileName: asset.fileName };
+  }
+
   try {
-    const buffer = await fs.readFile(path.join(MEDIA_DIR, `${asset.id}.${EXTENSION[asset.mimeType]}`));
-    return { buffer, mimeType: asset.mimeType };
-  } catch {
-    throw notFound("Berkas media");
+    const buffer = await fs.readFile(
+      path.join(MEDIA_DIR, `${asset.id}.${EXTENSION[asset.mimeType]}`)
+    );
+    return { buffer, mimeType: asset.mimeType, fileName: asset.fileName };
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === "ENOENT") throw notFound("Berkas media");
+    throw error;
   }
 }
 
@@ -104,15 +125,18 @@ export async function saveMedia(input: {
   purpose: MediaPurpose;
 }): Promise<MediaAsset> {
   const { buffer, mimeType } = decodeDataUrl(input.dataUrl);
+  const maxBytes = input.purpose === "RESUME" ? RESUME_MAX_BYTES : MEDIA_MAX_BYTES;
 
   if (buffer.byteLength === 0) {
-    throw new DomainError(422, "EMPTY_MEDIA", "Berkas gambar kosong.");
+    throw new DomainError(422, "EMPTY_MEDIA", "Berkas kosong.");
   }
-  if (buffer.byteLength > MEDIA_MAX_BYTES) {
+  if (buffer.byteLength > maxBytes) {
     throw new DomainError(
       422,
       "MEDIA_TOO_LARGE",
-      `Ukuran gambar maksimal ${Math.round(MEDIA_MAX_BYTES / 1024 / 1024)} MB.`
+      `Ukuran ${input.purpose === "RESUME" ? "CV" : "gambar"} maksimal ${Math.round(
+        maxBytes / 1024 / 1024
+      )} MB.`
     );
   }
 
@@ -121,11 +145,18 @@ export async function saveMedia(input: {
     throw new DomainError(
       422,
       "UNSUPPORTED_MEDIA",
-      "Format gambar tidak dikenali. Gunakan PNG, JPEG, WebP, GIF, atau AVIF."
+      "Format berkas tidak dikenali. Gunakan PNG, JPEG, WebP, GIF, AVIF, atau PDF untuk CV."
     );
   }
   if (!(MEDIA_ALLOWED_MIME as readonly string[]).includes(sniffed)) {
-    throw new DomainError(422, "UNSUPPORTED_MEDIA", "Format gambar tidak diizinkan.");
+    throw new DomainError(422, "UNSUPPORTED_MEDIA", "Format berkas tidak diizinkan.");
+  }
+  if ((input.purpose === "RESUME") !== (sniffed === "application/pdf")) {
+    throw new DomainError(
+      422,
+      "MEDIA_PURPOSE_MISMATCH",
+      input.purpose === "RESUME" ? "Unggah CV dalam format PDF." : "PDF hanya dapat diunggah sebagai CV."
+    );
   }
   if (mimeType !== sniffed) {
     throw new DomainError(
@@ -138,10 +169,17 @@ export async function saveMedia(input: {
   const id = createEntityId("med");
   const extension = EXTENSION[sniffed];
   const fileName = `${sanitizeBaseName(input.fileName)}.${extension}`;
-  const target = path.join(MEDIA_DIR, `${id}.${extension}`);
+  const objectPath = `${id}.${extension}`;
 
-  await fs.mkdir(MEDIA_DIR, { recursive: true });
-  await fs.writeFile(target, buffer);
+  if (isSupabaseConfigured()) {
+    const { error } = await getSupabaseClient()
+      .storage.from(STORAGE_BUCKET)
+      .upload(objectPath, buffer, { contentType: sniffed, upsert: false });
+    if (error) throw new Error(`Gagal mengunggah media ke Supabase Storage: ${error.message}`);
+  } else {
+    await fs.mkdir(MEDIA_DIR, { recursive: true });
+    await fs.writeFile(path.join(MEDIA_DIR, objectPath), buffer);
+  }
 
   try {
     return await withTransaction((draft) => {
@@ -166,9 +204,68 @@ export async function saveMedia(input: {
     });
   } catch (error) {
     // Jangan tinggalkan berkas yatim bila pencatatan basis data gagal.
-    await fs.rm(target, { force: true });
+    try {
+      if (isSupabaseConfigured()) {
+        const { error: cleanupError } = await getSupabaseClient()
+          .storage.from(STORAGE_BUCKET)
+          .remove([objectPath]);
+        if (cleanupError) {
+          console.error("[media] gagal membersihkan unggahan yatim:", cleanupError);
+        }
+      } else {
+        await fs.rm(path.join(MEDIA_DIR, objectPath), { force: true });
+      }
+    } catch (cleanupError) {
+      console.error("[media] gagal membersihkan unggahan yatim:", cleanupError);
+    }
     throw error;
   }
+}
+
+export function detachMediaReferences(database: Database, urls: ReadonlySet<string>): number {
+  let detachedReferences = 0;
+  const clear = (value: string): string => {
+    if (!urls.has(value)) return value;
+    detachedReferences += 1;
+    return "";
+  };
+
+  database.siteConfig.avatarUrl = clear(database.siteConfig.avatarUrl);
+  database.siteConfig.coverImageUrl = clear(database.siteConfig.coverImageUrl);
+  database.siteConfig.resumeUrl = clear(database.siteConfig.resumeUrl);
+  for (const experience of database.experiences) {
+    experience.logoUrl = clear(experience.logoUrl);
+  }
+  for (const certification of database.certifications) {
+    certification.imageUrl = clear(certification.imageUrl);
+    certification.issuerLogoUrl = clear(certification.issuerLogoUrl);
+  }
+  for (const section of database.profileSections) {
+    for (const entry of section.entries) {
+      entry.imageUrl = clear(entry.imageUrl);
+      entry.logoUrl = clear(entry.logoUrl);
+    }
+  }
+
+  return detachedReferences;
+}
+
+export async function purgeMediaFiles(assets: readonly MediaAsset[]): Promise<void> {
+  if (isSupabaseConfigured()) {
+    const objects = assets.map((asset) => `${asset.id}.${EXTENSION[asset.mimeType]}`);
+    if (objects.length === 0) return;
+    const { error } = await getSupabaseClient().storage.from(STORAGE_BUCKET).remove(objects);
+    if (error) throw new Error(`Gagal menghapus media dari Supabase Storage: ${error.message}`);
+    return;
+  }
+
+  await Promise.all(
+    assets.map((asset) =>
+      fs.rm(path.join(MEDIA_DIR, `${asset.id}.${EXTENSION[asset.mimeType]}`), {
+        force: true
+      })
+    )
+  );
 }
 
 export async function deleteMedia(id: string): Promise<void> {
@@ -177,19 +274,18 @@ export async function deleteMedia(id: string): Promise<void> {
     if (index < 0) throw notFound("Media");
     const [asset] = draft.mediaAssets.splice(index, 1);
     if (!asset) throw notFound("Media");
+    const detachedReferences = detachMediaReferences(draft, new Set([asset.url]));
     appendAudit(draft, {
       action: "PURGE",
       entityType: "MEDIA",
       entitySlug: asset.id,
       commitHash: createCommitHash(`media-del:${id}`),
-      summary: `Menghapus media "${asset.fileName}".`
+      summary: `Menghapus permanen media "${asset.fileName}" dan melepas ${detachedReferences} referensi.`
     });
     return asset;
   });
 
-  await fs.rm(path.join(MEDIA_DIR, `${removed.id}.${EXTENSION[removed.mimeType]}`), {
-    force: true
-  });
+  await purgeMediaFiles([removed]);
 }
 
 /** Total pemakaian penyimpanan media dalam byte. */

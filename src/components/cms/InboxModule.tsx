@@ -104,7 +104,7 @@ export function InboxModule({ inquiries }: { inquiries: Inquiry[] }) {
           />
         </label>
 
-        <div style={{ display: "flex", gap: 0 }}>
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 0, maxWidth: "100%" }}>
           <button
             type="button"
             className="btn btn--sm"

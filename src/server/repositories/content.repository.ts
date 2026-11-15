@@ -3,22 +3,20 @@ import type {
   Certification,
   Database,
   Experience,
-  Skill,
-  Testimonial
+  Skill
 } from "@/contracts/domain";
 import type {
   ArticleInput,
   CertificationInput,
   ExperienceInput,
-  SkillInput,
-  TestimonialInput
+  SkillInput
 } from "@/contracts/content.contract";
 import { readingTimeFrom } from "@/contracts/primitives";
 import { readDatabase, withTransaction } from "@/server/db/store";
 import { DomainError, conflictSlug, notFound } from "@/server/errors";
 import { appendAudit, createCommitHash, createEntityId } from "./audit.repository";
 
-/** Repositori konten pendukung: rekam jejak, sertifikasi, keahlian, jurnal, testimoni. */
+/** Repositori konten publik beranda dan profil. */
 
 function nextOrder(items: ReadonlyArray<{ sortOrder: number }>): number {
   return items.reduce((max, item) => Math.max(max, item.sortOrder), 0) + 1;
@@ -50,10 +48,11 @@ export async function listArticles(publishedOnly = true): Promise<Article[]> {
   return [...filtered].sort((a, b) => b.publishedAt.localeCompare(a.publishedAt));
 }
 
-export async function listTestimonials(visibleOnly = true): Promise<Testimonial[]> {
-  const testimonials = (await readDatabase()).testimonials;
-  const filtered = visibleOnly ? testimonials.filter((item) => item.isVisible) : testimonials;
-  return sortByOrder(filtered);
+export async function getPublishedArticleBySlug(slug: string): Promise<Article | null> {
+  const article = (await readDatabase()).articles.find(
+    (item) => item.slug === slug && item.status === "PUBLISHED"
+  );
+  return article ? structuredClone(article) : null;
 }
 
 /* ---------------------------------------------------------------- REKAM JEJAK */
@@ -151,7 +150,6 @@ export async function createCertification(input: CertificationInput): Promise<Ce
       issueDate: input.issueDate,
       expiryDate: input.expiryDate,
       credentialId: input.credentialId,
-      verifyUrl: input.verifyUrl,
       skills: input.skills,
       imageUrl: input.imageUrl,
       issuerLogoUrl: input.issuerLogoUrl,
@@ -182,7 +180,6 @@ export async function updateCertification(
     entity.issueDate = input.issueDate;
     entity.expiryDate = input.expiryDate;
     entity.credentialId = input.credentialId;
-    entity.verifyUrl = input.verifyUrl;
     entity.skills = input.skills;
     entity.imageUrl = input.imageUrl;
     entity.issuerLogoUrl = input.issuerLogoUrl;
@@ -299,6 +296,7 @@ export async function createArticle(input: ArticleInput): Promise<Article> {
       publishedAt: input.publishedAt || timestamp.slice(0, 10),
       summary: input.summary,
       content: input.content,
+      externalUrl: input.externalUrl,
       status: input.status,
       createdAt: timestamp,
       updatedAt: timestamp
@@ -326,6 +324,7 @@ export async function updateArticle(id: string, input: ArticleInput): Promise<Ar
     entity.publishedAt = input.publishedAt || entity.publishedAt;
     entity.summary = input.summary;
     entity.content = input.content;
+    entity.externalUrl = input.externalUrl;
     entity.readTime = readingTimeFrom(input.content);
     entity.status = input.status;
     entity.updatedAt = new Date().toISOString();
@@ -352,81 +351,6 @@ export async function deleteArticle(id: string): Promise<void> {
       entitySlug: removed.slug,
       commitHash: createCommitHash(`article-del:${id}`),
       summary: `Menghapus artikel "${removed.title}".`
-    });
-  });
-}
-
-/* ----------------------------------------------------------------- TESTIMONI */
-
-export async function createTestimonial(input: TestimonialInput): Promise<Testimonial> {
-  return withTransaction((draft) => {
-    const entity: Testimonial = {
-      id: createEntityId("tst"),
-      author: input.author,
-      role: input.role,
-      organization: input.organization,
-      relationship: input.relationship,
-      quote: input.quote,
-      verifiedTag: input.verifiedTag,
-      date: input.date || new Date().toISOString().slice(0, 10),
-      avatarUrl: input.avatarUrl,
-      profileUrl: input.profileUrl,
-      isVisible: input.isVisible,
-      sortOrder: nextOrder(draft.testimonials),
-      createdAt: new Date().toISOString()
-    };
-    draft.testimonials.push(entity);
-    appendAudit(draft, {
-      action: "CREATE",
-      entityType: "TESTIMONIAL",
-      entitySlug: input.author.toLowerCase().replace(/\s+/g, "-"),
-      commitHash: createCommitHash(entity.id),
-      summary: `Menambahkan rekomendasi dari ${input.author} (${input.organization}).`
-    });
-    return structuredClone(entity);
-  });
-}
-
-export async function updateTestimonial(
-  id: string,
-  input: TestimonialInput
-): Promise<Testimonial> {
-  return withTransaction((draft) => {
-    const entity = draft.testimonials.find((item) => item.id === id);
-    if (!entity) throw notFound("Rekomendasi");
-    entity.author = input.author;
-    entity.role = input.role;
-    entity.organization = input.organization;
-    entity.relationship = input.relationship;
-    entity.quote = input.quote;
-    entity.verifiedTag = input.verifiedTag;
-    entity.date = input.date || entity.date;
-    entity.avatarUrl = input.avatarUrl;
-    entity.profileUrl = input.profileUrl;
-    entity.isVisible = input.isVisible;
-    appendAudit(draft, {
-      action: "UPDATE",
-      entityType: "TESTIMONIAL",
-      entitySlug: input.author.toLowerCase().replace(/\s+/g, "-"),
-      commitHash: createCommitHash(`testimonial:${id}`),
-      summary: `Memperbarui rekomendasi dari ${input.author}.`
-    });
-    return structuredClone(entity);
-  });
-}
-
-export async function deleteTestimonial(id: string): Promise<void> {
-  await withTransaction((draft) => {
-    const index = draft.testimonials.findIndex((item) => item.id === id);
-    if (index < 0) throw notFound("Rekomendasi");
-    const [removed] = draft.testimonials.splice(index, 1);
-    if (!removed) throw notFound("Rekomendasi");
-    appendAudit(draft, {
-      action: "PURGE",
-      entityType: "TESTIMONIAL",
-      entitySlug: removed.author.toLowerCase().replace(/\s+/g, "-"),
-      commitHash: createCommitHash(`testimonial-del:${id}`),
-      summary: `Menghapus rekomendasi dari ${removed.author}.`
     });
   });
 }

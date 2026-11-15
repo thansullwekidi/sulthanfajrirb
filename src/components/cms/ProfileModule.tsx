@@ -476,7 +476,7 @@ function EntryForm({
               className="input"
               value={publisher}
               onChange={(event) => setPublisher(event.target.value)}
-              placeholder="Nama jurnal, konferensi, atau kantor"
+              placeholder="Nama penerbit, konferensi, atau instansi"
             />
           </Field>
         </div>

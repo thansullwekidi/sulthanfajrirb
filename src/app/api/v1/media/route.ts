@@ -7,13 +7,15 @@ import {
 import { envelopeResponse, readJsonBody } from "@/server/http/respond";
 
 export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
+export const maxDuration = 30;
 
 /** Daftar aset media beserta total pemakaian penyimpanan. */
 export async function GET() {
   return envelopeResponse(await mediaListAction());
 }
 
-/** Unggah berkas gambar baru (data URL base64). */
+/** Unggah gambar atau dokumen CV PDF (data URL base64). */
 export async function POST(request: NextRequest) {
   return envelopeResponse(await mediaUploadAction(await readJsonBody(request)));
 }

@@ -4,11 +4,8 @@ import { getSiteConfig } from "@/server/repositories/config.repository";
 
 const MODULES = [
   { index: "01", label: "Ringkasan", href: "/" },
-  { index: "02", label: "Katalog Karya", href: "/karya" },
-  { index: "03", label: "Rekam Jejak", href: "/rekam-jejak" },
-  { index: "04", label: "Catatan Lab", href: "/catatan-lab" },
-  { index: "05", label: "CV ATS", href: "/cv" },
-  { index: "06", label: "Kontak", href: "/kontak" }
+  { index: "02", label: "CV", href: "/cv" },
+  { index: "03", label: "Kontak", href: "/kontak" }
 ];
 
 export async function SiteFooter() {
@@ -25,7 +22,7 @@ export async function SiteFooter() {
             </p>
             <p style={{ color: "var(--muted)", fontSize: 12, maxWidth: "46ch", lineHeight: 1.7 }}>
               {config.fullName} — {config.headline}. Basis data portofolio dikelola melalui Studio
-              CMS dengan protokol hapus dua tahap dan log audit permanen.
+              CMS dengan penghapusan permanen dan log audit.
             </p>
           </div>
 
@@ -43,10 +40,12 @@ export async function SiteFooter() {
 
           <div className="footer-col">
             <span className="footer-col__title">Saluran</span>
-            <a href={`mailto:${config.email}`} className="footer-link">
-              <Icon name="mail" size={12} />
-              {config.email}
-            </a>
+            {config.email ? (
+              <a href={`mailto:${config.email}`} className="footer-link">
+                <Icon name="mail" size={12} />
+                {config.email}
+              </a>
+            ) : null}
             {config.github ? (
               <a
                 href={config.github}
@@ -82,15 +81,7 @@ export async function SiteFooter() {
             {config.nim ? ` · NIM ${config.nim}` : ""}
           </span>
           <span>Next.js 15 · TypeScript Strict · Persistence Engine Lokal</span>
-          <span>
-            CV {config.cvVersion} · Diperbarui{" "}
-            {new Intl.DateTimeFormat("id-ID", {
-              day: "2-digit",
-              month: "short",
-              year: "numeric",
-              timeZone: "Asia/Jakarta"
-            }).format(new Date(config.updatedAt))}
-          </span>
+          <span>{config.resumeUrl ? "CV PDF tersedia" : "CV belum diunggah"}</span>
         </div>
       </div>
     </footer>

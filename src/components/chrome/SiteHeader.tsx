@@ -8,11 +8,8 @@ import { ThemeToggle } from "./ThemeToggle";
 
 const NAV = [
   { index: "01", label: "Ringkasan", href: "/" },
-  { index: "02", label: "Katalog Karya", href: "/karya" },
-  { index: "03", label: "Rekam Jejak", href: "/rekam-jejak" },
-  { index: "04", label: "Catatan Lab", href: "/catatan-lab" },
-  { index: "05", label: "CV ATS", href: "/cv" },
-  { index: "06", label: "Kontak", href: "/kontak" }
+  { index: "02", label: "CV", href: "/cv" },
+  { index: "03", label: "Kontak", href: "/kontak" }
 ];
 
 function isActive(pathname: string, href: string): boolean {

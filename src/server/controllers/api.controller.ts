@@ -12,10 +12,8 @@ import type {
   Experience,
   Inquiry,
   InquiryStatus,
-  Project,
   SiteConfig,
-  Skill,
-  Testimonial
+  Skill
 } from "@/contracts/domain";
 import type { AdminSession } from "@/contracts/auth.contract";
 import { databaseImportSchema } from "@/contracts/database.contract";
@@ -23,8 +21,7 @@ import {
   articleInputSchema,
   certificationInputSchema,
   experienceInputSchema,
-  skillInputSchema,
-  testimonialInputSchema
+  skillInputSchema
 } from "@/contracts/content.contract";
 import { inquiryInputSchema, inquiryStatusSchema } from "@/contracts/inquiry.contract";
 import { siteConfigInputSchema } from "@/contracts/config.contract";
@@ -34,40 +31,23 @@ import {
   mediaUploadSchema,
   socialMutationSchema
 } from "@/contracts/media.contract";
-import {
-  projectInputSchema,
-  projectMoveSchema,
-  projectPurgeSchema
-} from "@/contracts/project.contract";
 import { loginSchema } from "@/contracts/auth.contract";
 import { fieldErrorsFromZod } from "@/contracts/validation";
 import { DomainError } from "@/server/errors";
 import { getAdminSession, issueSessionToken, verifyPassphrase } from "@/server/services/auth.service";
 import {
-  archiveProject,
-  createProject,
-  moveProject,
-  purgeProject,
-  restoreProject,
-  setProjectFeatured,
-  updateProject
-} from "@/server/repositories/project.repository";
-import {
   createArticle,
   createCertification,
   createExperience,
   createSkill,
-  createTestimonial,
   deleteArticle,
   deleteCertification,
   deleteExperience,
   deleteSkill,
-  deleteTestimonial,
   updateArticle,
   updateCertification,
   updateExperience,
-  updateSkill,
-  updateTestimonial
+  updateSkill
 } from "@/server/repositories/content.repository";
 import {
   createInquiry,
@@ -115,10 +95,8 @@ import {
  */
 
 const TAGS = {
-  projects: ["projects:catalog", "kpi:overview", "resume:ats", "works:featured"],
   content: ["trajectory:public", "resume:ats", "skills:public"],
-  articles: ["journal:public"],
-  testimonials: ["endorsements:public"],
+  articles: ["publications:home"],
   inquiries: ["inbox:admin"],
   config: ["site:config", "resume:ats", "kpi:overview"],
   media: ["media:library", "site:config", "trajectory:public"],
@@ -219,73 +197,6 @@ export async function snapshotAction(): Promise<ApiResponse<AdminSnapshot>> {
   return runAdmin(async () => envelopeOk(await buildAdminSnapshot()));
 }
 
-/* --------------------------------------------------------------- PROYEK */
-
-export async function createProjectAction(payload: unknown): Promise<ApiResponse<Project>> {
-  return runAdmin(async () => {
-    const input = parsePayload(projectInputSchema, payload);
-    const project = await createProject(input);
-    return envelopeOk(project, { status: 201, invalidatedTags: [...TAGS.projects] });
-  });
-}
-
-export async function updateProjectAction(
-  id: string,
-  payload: unknown
-): Promise<ApiResponse<Project>> {
-  return runAdmin(async () => {
-    const input = parsePayload(projectInputSchema, payload);
-    const project = await updateProject(id, input);
-    return envelopeOk(project, { invalidatedTags: [...TAGS.projects] });
-  });
-}
-
-export async function archiveProjectAction(id: string): Promise<ApiResponse<Project>> {
-  return runAdmin(async () => {
-    const project = await archiveProject(id);
-    return envelopeOk(project, { invalidatedTags: [...TAGS.projects] });
-  });
-}
-
-export async function restoreProjectAction(id: string): Promise<ApiResponse<Project>> {
-  return runAdmin(async () => {
-    const project = await restoreProject(id);
-    return envelopeOk(project, { invalidatedTags: [...TAGS.projects] });
-  });
-}
-
-export async function purgeProjectAction(
-  id: string,
-  payload: unknown
-): Promise<ApiResponse<{ slug: string }>> {
-  return runAdmin(async () => {
-    const input = parsePayload(projectPurgeSchema, payload);
-    const result = await purgeProject(id, input.confirmSlug);
-    return envelopeOk(result, { invalidatedTags: [...TAGS.projects] });
-  });
-}
-
-export async function moveProjectAction(
-  id: string,
-  payload: unknown
-): Promise<ApiResponse<Project[]>> {
-  return runAdmin(async () => {
-    const input = parsePayload(projectMoveSchema, payload);
-    const projects = await moveProject(id, input.direction);
-    return envelopeOk(projects, { invalidatedTags: [...TAGS.projects] });
-  });
-}
-
-export async function featureProjectAction(
-  id: string,
-  featured: boolean
-): Promise<ApiResponse<Project>> {
-  return runAdmin(async () => {
-    const project = await setProjectFeatured(id, featured);
-    return envelopeOk(project, { invalidatedTags: [...TAGS.projects] });
-  });
-}
-
 /* ---------------------------------------------------- KOLEKSI KONTEN CRUD */
 
 export async function createCollectionAction(
@@ -313,12 +224,6 @@ export async function createCollectionAction(
       case "articles": {
         const data: Article = await createArticle(parsePayload(articleInputSchema, payload));
         return envelopeOk(data, { status: 201, invalidatedTags: [...TAGS.articles] });
-      }
-      case "testimonials": {
-        const data: Testimonial = await createTestimonial(
-          parsePayload(testimonialInputSchema, payload)
-        );
-        return envelopeOk(data, { status: 201, invalidatedTags: [...TAGS.testimonials] });
       }
     }
   });
@@ -350,13 +255,6 @@ export async function updateCollectionAction(
         const data = await updateArticle(id, parsePayload(articleInputSchema, payload));
         return envelopeOk(data, { invalidatedTags: [...TAGS.articles] });
       }
-      case "testimonials": {
-        const data = await updateTestimonial(
-          id,
-          parsePayload(testimonialInputSchema, payload)
-        );
-        return envelopeOk(data, { invalidatedTags: [...TAGS.testimonials] });
-      }
     }
   });
 }
@@ -379,19 +277,11 @@ export async function deleteCollectionAction(
       case "articles":
         await deleteArticle(id);
         break;
-      case "testimonials":
-        await deleteTestimonial(id);
-        break;
     }
     return envelopeOk(
       { id },
       {
-        invalidatedTags:
-          entity === "articles"
-            ? [...TAGS.articles]
-            : entity === "testimonials"
-              ? [...TAGS.testimonials]
-              : [...TAGS.content]
+        invalidatedTags: entity === "articles" ? [...TAGS.articles] : [...TAGS.content]
       }
     );
   });

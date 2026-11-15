@@ -100,13 +100,8 @@ async function snapshot() {
   check("unggah tanpa sesi ditolak", noSession.status === 403, `HTTP ${noSession.status}`);
 
   console.log("\n== MEDIA SOSIAL ==");
-  // Bersihkan sisa uji sebelumnya agar urutan dapat diuji secara deterministik.
   const existing = await snapshot();
-  for (const stale of existing.database.socialLinks) {
-    await call("POST", "/api/v1/social", { action: "social.delete", id: stale.id });
-  }
-  const baseline = await snapshot();
-  check("koleksi sosial bersih sebelum uji", baseline.database.socialLinks.length === 0);
+  const baselineSocialIds = new Set(existing.database.socialLinks.map((link) => link.id));
 
   const created = await call("POST", "/api/v1/social", {
     action: "social.create",
@@ -143,9 +138,12 @@ async function snapshot() {
     id: secondId,
     direction: "UP"
   });
+  const reordered = moved.json.data ?? [];
+  const secondIndex = reordered.findIndex((item) => item.id === secondId);
+  const socialIndex = reordered.findIndex((item) => item.id === socialId);
   check(
     "urutkan media sosial",
-    moved.json.ok === true && moved.json.data?.[0]?.id === secondId,
+    moved.json.ok === true && secondIndex === socialIndex - 1,
     JSON.stringify(moved.json.data?.map?.((item) => item.platform) ?? {})
   );
 
@@ -289,7 +287,6 @@ async function snapshot() {
     issueDate: "2025-01-15",
     expiryDate: "",
     credentialId: "UJI-001",
-    verifyUrl: "https://example.com/verify/uji-001",
     skills: "Desain Grafis",
     imageUrl: asset.url,
     issuerLogoUrl: asset.url
@@ -301,6 +298,9 @@ async function snapshot() {
   const savedCert = snap.database.certifications.find((item) => item.id === certId);
   check("foto sertifikasi tersimpan", savedCert.imageUrl === asset.url);
   check("logo penerbit tersimpan", savedCert.issuerLogoUrl === asset.url);
+  check("tautan verifikasi tidak disimpan", !Object.hasOwn(savedCert, "verifyUrl"));
+  const homeWithCertificate = await (await fetch(`${BASE}/`)).text();
+  check("foto sertifikat tampil sebagai lampiran", homeWithCertificate.includes(`src="${asset.url}"`));
 
   const exp = await call("POST", "/api/v1/collections/experiences", {
     period: "2024 — 2025",
@@ -329,15 +329,33 @@ async function snapshot() {
   check("beranda memuat tautan Instagram", home.includes("instagram.com"));
   check("beranda memuat label media sosial", home.includes("Media Sosial"));
 
-  const rekam = await (await fetch(`${BASE}/rekam-jejak`)).text();
-  check("rekam jejak memuat logo media", rekam.includes(`/api/v1/media/${asset.id}`));
-  check("rekam jejak memuat tautan publikasi", rekam.includes("doi.org/10.1234"));
-  check("rekam jejak memuat nama penulis", rekam.includes("Sulthan"));
+  check("beranda memuat logo pengalaman", home.includes(`/api/v1/media/${asset.id}`));
+  check("beranda memuat tautan publikasi", home.includes("doi.org/10.1234"));
+  check("beranda memuat nama penulis", home.includes("Sulthan"));
 
   const kontak = await (await fetch(`${BASE}/kontak`)).text();
   check("kontak memuat media sosial", kontak.includes("instagram.com"));
 
   console.log("\n== PEMBERSIHAN ==");
+  const delMedia = await call("DELETE", "/api/v1/media", { id: asset.id });
+  check("hapus media permanen", delMedia.json.ok === true);
+
+  const after = await fetch(`${BASE}/api/v1/media/${asset.id}`);
+  check("berkas media terhapus", after.status === 404, `HTTP ${after.status}`);
+
+  snap = await snapshot();
+  const references = [
+    snap.database.siteConfig.avatarUrl,
+    snap.database.siteConfig.coverImageUrl,
+    snap.database.siteConfig.resumeUrl,
+    ...snap.database.experiences.map((item) => item.logoUrl),
+    ...snap.database.certifications.flatMap((item) => [item.imageUrl, item.issuerLogoUrl]),
+    ...snap.database.profileSections.flatMap((section) =>
+      section.entries.flatMap((item) => [item.imageUrl, item.logoUrl])
+    )
+  ];
+  check("hapus media melepas semua referensi", !references.includes(asset.url));
+
   const delPub = await call("POST", "/api/v1/profile", {
     action: "entry.delete",
     sectionId: publications.id,
@@ -357,17 +375,6 @@ async function snapshot() {
   });
   check("hapus media sosial", delSocial.json.ok === true);
 
-  const delMedia = await call("DELETE", "/api/v1/media", { id: asset.id });
-  check("hapus media", delMedia.json.ok === true);
-
-  const after = await fetch(`${BASE}/api/v1/media/${asset.id}`);
-  check("berkas media terhapus", after.status === 404, `HTTP ${after.status}`);
-
-  snap = await snapshot();
-  check(
-    "koleksi media bersih",
-    snap.database.mediaAssets.every((item) => item.id !== asset.id)
-  );
   check(
     "audit mencatat mutasi media",
     snap.database.auditLogs.some((log) => log.entityType === "MEDIA")
@@ -377,24 +384,22 @@ async function snapshot() {
     snap.database.auditLogs.some((log) => log.entityType === "SOCIAL_LINK")
   );
 
-  // Kembalikan entri pendidikan ke keadaan semula.
+  // Kembalikan entri pendidikan persis seperti sebelum pengujian.
   await call("POST", "/api/v1/profile", {
     action: "entry.update",
     sectionId: education.id,
     entryId: eduEntry.id,
-    entry: {
-      ...eduEntry,
-      logoUrl: "",
-      url: "",
-      subtitle: "",
-      startDate: "",
-      endDate: ""
-    }
+    entry: eduEntry
   });
   await call("POST", "/api/v1/social", { action: "social.delete", id: socialId });
+  snap = await snapshot();
+  check(
+    "tautan sosial awal tetap ada",
+    [...baselineSocialIds].every((id) => snap.database.socialLinks.some((link) => link.id === id))
+  );
 
   console.log(`\nHASIL: ${pass} lolos, ${fail} gagal\n`);
-  process.exit(fail === 0 ? 0 : 1);
+  process.exitCode = fail === 0 ? 0 : 1;
 })().catch((error) => {
   console.error("Kesalahan uji:", error);
   process.exit(1);

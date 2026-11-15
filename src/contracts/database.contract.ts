@@ -4,15 +4,13 @@ import {
   articleInputSchema,
   certificationInputSchema,
   experienceBaseSchema,
-  skillInputSchema,
-  testimonialInputSchema
+  skillInputSchema
 } from "./content.contract";
 import {
   profileEntryBaseSchema,
   profileSectionInputSchema
 } from "./profile.contract";
 import { socialLinkInputSchema } from "./media.contract";
-import { projectInputSchema } from "./project.contract";
 import { AUDIT_ACTIONS, INQUIRY_STATUSES, MEDIA_ALLOWED_MIME, MEDIA_PURPOSES } from "./domain";
 import { inquiryInputSchema } from "./inquiry.contract";
 
@@ -30,15 +28,6 @@ const inquiryRecordSchema = inquiryInputSchema.extend({
   id: z.string().trim().min(1),
   status: z.enum(INQUIRY_STATUSES).default("UNREAD"),
   createdAt: z.string().trim().min(1)
-});
-
-const projectRecordSchema = projectInputSchema.extend({
-  id: z.string().trim().min(1),
-  sortOrder: z.number().int().optional(),
-  commitHash: z.string().trim().optional(),
-  createdAt: z.string().trim().optional(),
-  updatedAt: z.string().trim().optional(),
-  archivedAt: z.string().trim().nullable().optional()
 });
 
 const experienceRecordSchema = experienceBaseSchema.extend({
@@ -64,12 +53,6 @@ const articleRecordSchema = articleInputSchema.extend({
   readTime: z.coerce.number().int().min(1).max(90).optional(),
   createdAt: z.string().trim().optional(),
   updatedAt: z.string().trim().optional()
-});
-
-const testimonialRecordSchema = testimonialInputSchema.extend({
-  id: z.string().trim().min(1),
-  sortOrder: z.number().int().optional(),
-  createdAt: z.string().trim().optional()
 });
 
 const profileEntryRecordSchema = profileEntryBaseSchema.extend({
@@ -105,13 +88,24 @@ const mediaAssetRecordSchema = z.object({
 
 export const databaseImportSchema = z.object({
   schemaVersion: z.number().int().optional(),
-  projects: z.array(projectRecordSchema).max(300),
   experiences: z.array(experienceRecordSchema).max(300),
   certifications: z.array(certificationRecordSchema).max(300),
   skills: z.array(skillRecordSchema).max(300),
   articles: z.array(articleRecordSchema).max(300),
-  testimonials: z.array(testimonialRecordSchema).max(300),
-  profileSections: z.array(profileSectionRecordSchema).max(100).optional(),
+  profileSections: z.preprocess(
+    (value) =>
+      Array.isArray(value)
+        ? value.filter(
+            (section) =>
+              typeof section !== "object" ||
+              section === null ||
+              !["PROJECTS", "RECOMMENDATIONS"].includes(
+                String((section as { kind?: unknown }).kind)
+              )
+          )
+        : value,
+    z.array(profileSectionRecordSchema).max(100).optional()
+  ),
   socialLinks: z.array(socialLinkRecordSchema).max(50).optional(),
   mediaAssets: z.array(mediaAssetRecordSchema).max(500).optional(),
   inquiries: z.array(inquiryRecordSchema).max(500).optional(),

@@ -2,20 +2,32 @@ import { createHmac, timingSafeEqual } from "node:crypto";
 import { cookies } from "next/headers";
 import { SESSION_COOKIE, SESSION_TTL_MS, type AdminSession } from "@/contracts/auth.contract";
 
-const SECRET =
-  process.env.STUDIO_SESSION_SECRET && process.env.STUDIO_SESSION_SECRET.length >= 16
-    ? process.env.STUDIO_SESSION_SECRET
-    : "obsidian-studio-local-secret-2026";
-
-const ADMIN_PASSPHRASE = process.env.STUDIO_ADMIN_PASSPHRASE ?? "studio-2026";
+const LOCAL_SESSION_SECRET = "obsidian-studio-local-secret-2026";
+const LOCAL_ADMIN_PASSPHRASE = "studio-2026";
 const ADMIN_LABEL = process.env.STUDIO_ADMIN_LABEL ?? "admin@msfr.dev";
 
+function getSessionSecret(): string {
+  const secret = process.env.STUDIO_SESSION_SECRET;
+  if (process.env.NODE_ENV === "production" && (!secret || secret.length < 32)) {
+    throw new Error("STUDIO_SESSION_SECRET wajib diatur minimal 32 karakter di production.");
+  }
+  return secret && secret.length >= 16 ? secret : LOCAL_SESSION_SECRET;
+}
+
+function getAdminPassphrase(): string {
+  const passphrase = process.env.STUDIO_ADMIN_PASSPHRASE;
+  if (process.env.NODE_ENV === "production" && (!passphrase || passphrase.length < 16)) {
+    throw new Error("STUDIO_ADMIN_PASSPHRASE wajib diatur minimal 16 karakter di production.");
+  }
+  return passphrase ?? LOCAL_ADMIN_PASSPHRASE;
+}
+
 function sign(payload: string): string {
-  return createHmac("sha256", SECRET).update(payload).digest("base64url");
+  return createHmac("sha256", getSessionSecret()).update(payload).digest("base64url");
 }
 
 export function verifyPassphrase(passphrase: string): boolean {
-  const expected = Buffer.from(ADMIN_PASSPHRASE, "utf8");
+  const expected = Buffer.from(getAdminPassphrase(), "utf8");
   const received = Buffer.from(passphrase, "utf8");
   if (expected.length !== received.length) return false;
   return timingSafeEqual(expected, received);
@@ -55,6 +67,10 @@ export function readSessionToken(token: string | undefined | null): AdminSession
 }
 
 export async function getAdminSession(): Promise<AdminSession | null> {
+  if (process.env.NODE_ENV === "production") {
+    getSessionSecret();
+    getAdminPassphrase();
+  }
   const jar = await cookies();
   return readSessionToken(jar.get(SESSION_COOKIE)?.value);
 }

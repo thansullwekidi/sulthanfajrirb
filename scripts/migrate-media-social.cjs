@@ -1,7 +1,6 @@
 /**
  * Migrasi sekali jalan: menambahkan koleksi media sosial & media,
- * field logo/penulis/penerbit, serta dua jenis bagian profil baru
- * (Layanan & Rekomendasi) tanpa menyentuh data yang sudah ada.
+ * field logo/penulis/penerbit, dan bagian Layanan.
  */
 const fs = require("node:fs");
 const path = require("node:path");
@@ -12,7 +11,12 @@ const db = JSON.parse(raw);
 
 const stamp = Date.now();
 const backup = path.join(process.cwd(), ".data", `backup-pre-media-social-${stamp}.json`);
-fs.writeFileSync(backup, raw, "utf8");
+db.profileSections = db.profileSections.filter(
+  (section) => !["PROJECTS", "RECOMMENDATIONS"].includes(section.kind)
+);
+delete db.projects;
+delete db.testimonials;
+fs.writeFileSync(backup, JSON.stringify(db, null, 2), "utf8");
 
 const now = new Date().toISOString();
 
@@ -44,7 +48,7 @@ for (const section of db.profileSections) {
   }
 }
 
-// 5. Dua jenis bagian baru, hanya bila belum ada.
+// 5. Bagian Layanan, hanya bila belum ada.
 const kinds = new Set(db.profileSections.map((section) => section.kind));
 const maxOrder = db.profileSections.reduce(
   (max, section) => Math.max(max, Number(section.sortOrder) || 0),
@@ -58,20 +62,6 @@ if (!kinds.has("SERVICES")) {
     title: "Layanan",
     subtitle: "Jasa yang dapat dipesan",
     kind: "SERVICES",
-    visible: true,
-    sortOrder: maxOrder + append.length + 1,
-    entries: [],
-    createdAt: now,
-    updatedAt: now
-  });
-}
-if (!kinds.has("RECOMMENDATIONS")) {
-  append.push({
-    id: "prf_rekomendasi",
-    slug: "rekomendasi",
-    title: "Rekomendasi",
-    subtitle: "Kata orang lain tentang kerja sama",
-    kind: "RECOMMENDATIONS",
     visible: true,
     sortOrder: maxOrder + append.length + 1,
     entries: [],

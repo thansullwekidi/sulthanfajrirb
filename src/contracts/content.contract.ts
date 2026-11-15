@@ -6,9 +6,21 @@ import {
   SKILL_DOMAINS,
   WORK_MODES
 } from "./domain";
-import { parseCsvList } from "./primitives";
+import { normalizeSlug, parseCsvList } from "./primitives";
 import { nonEmptyText, optionalDateIso, optionalHttpUrl, optionalImageUrl } from "./validation";
-import { slugField } from "./project.contract";
+
+const slugField = z
+  .string({ error: "Slug wajib diisi." })
+  .transform((value) => normalizeSlug(value))
+  .refine((value) => value.length >= 3, {
+    message: "Slug minimal 3 karakter (a-z, 0-9, tanda hubung)."
+  })
+  .refine((value) => value.length <= 140, {
+    message: "Slug maksimal 140 karakter."
+  })
+  .refine((value) => /^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(value), {
+    message: "Slug hanya boleh berisi huruf kecil, angka, dan tanda hubung tunggal."
+  });
 
 const highlightsField = z.preprocess(
   (value) => {
@@ -45,18 +57,18 @@ export const experienceBaseSchema = z.object({
   role: nonEmptyText("Peran", 3, 120),
   organization: nonEmptyText("Institusi", 3, 140),
   type: z.enum(EXPERIENCE_TYPES, {
-    errorMap: () => ({ message: "Jenis pengalaman tidak dikenali." })
+    error: "Jenis pengalaman tidak dikenali."
   }),
   highlights: highlightsField,
   employmentType: z
     .enum(EMPLOYMENT_TYPES, {
-      errorMap: () => ({ message: "Jenis kerja tidak dikenali." })
+      error: "Jenis kerja tidak dikenali."
     })
     .default("FULL_TIME"),
   location: z.string().trim().max(140, "Lokasi terlalu panjang.").default(""),
   workMode: z
     .enum(WORK_MODES, {
-      errorMap: () => ({ message: "Mode kerja tidak dikenali." })
+      error: "Mode kerja tidak dikenali."
     })
     .default("ON_SITE"),
   description: z.string().trim().max(3000, "Deskripsi maksimal 3000 karakter.").default(""),
@@ -90,7 +102,6 @@ export const certificationInputSchema = z.object({
   issueDate: optionalDateIso("Tanggal terbit"),
   expiryDate: optionalDateIso("Tanggal kedaluwarsa").default(""),
   credentialId: z.string().trim().max(80, "ID kredensial terlalu panjang.").default(""),
-  verifyUrl: optionalHttpUrl("Tautan verifikasi"),
   skills: tagsField,
   imageUrl: optionalImageUrl("Foto sertifikasi"),
   issuerLogoUrl: optionalImageUrl("Logo penerbit")
@@ -99,16 +110,16 @@ export const certificationInputSchema = z.object({
 export const skillInputSchema = z.object({
   name: nonEmptyText("Nama keahlian", 2, 80),
   category: z.enum(SKILL_DOMAINS, {
-    errorMap: () => ({ message: "Domain keahlian tidak dikenali." })
+    error: "Domain keahlian tidak dikenali."
   }),
   level: z.coerce
-    .number({ invalid_type_error: "Tingkat penguasaan harus berupa angka." })
+    .number({ error: "Tingkat penguasaan harus berupa angka." })
     .int("Tingkat penguasaan harus bilangan bulat.")
     .min(0, "Tingkat penguasaan minimal 0%.")
     .max(100, "Tingkat penguasaan maksimal 100%."),
   context: z.string().trim().max(220, "Konteks maksimal 220 karakter.").default(""),
   endorsements: z.coerce
-    .number({ invalid_type_error: "Jumlah dukungan harus berupa angka." })
+    .number({ error: "Jumlah dukungan harus berupa angka." })
     .int("Jumlah dukungan harus bilangan bulat.")
     .min(0, "Jumlah dukungan tidak boleh negatif.")
     .max(99_999, "Jumlah dukungan terlalu besar.")
@@ -123,24 +134,11 @@ export const articleInputSchema = z.object({
   publishedAt: optionalDateIso("Tanggal terbit"),
   summary: nonEmptyText("Ringkasan", 20, 320),
   content: nonEmptyText("Isi artikel", 40, 30000),
+  externalUrl: optionalHttpUrl("Tautan artikel").default(""),
   status: z.enum(ARTICLE_STATUSES).default("PUBLISHED")
-});
-
-export const testimonialInputSchema = z.object({
-  author: nonEmptyText("Nama pemberi rekomendasi", 3, 120),
-  role: nonEmptyText("Jabatan", 3, 120),
-  organization: nonEmptyText("Instansi", 3, 140),
-  relationship: z.string().trim().max(140, "Hubungan kerja terlalu panjang.").default(""),
-  quote: nonEmptyText("Kutipan", 20, 700),
-  verifiedTag: z.string().trim().max(60, "Label verifikasi terlalu panjang.").default("Terverifikasi"),
-  date: optionalDateIso("Tanggal"),
-  avatarUrl: optionalImageUrl("Foto pemberi rekomendasi"),
-  profileUrl: optionalHttpUrl("Tautan profil pemberi rekomendasi"),
-  isVisible: z.boolean().default(true)
 });
 
 export type ExperienceInput = z.infer<typeof experienceInputSchema>;
 export type CertificationInput = z.infer<typeof certificationInputSchema>;
 export type SkillInput = z.infer<typeof skillInputSchema>;
 export type ArticleInput = z.infer<typeof articleInputSchema>;
-export type TestimonialInput = z.infer<typeof testimonialInputSchema>;

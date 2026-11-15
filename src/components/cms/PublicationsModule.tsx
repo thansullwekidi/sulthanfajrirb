@@ -31,6 +31,7 @@ function ArticleForm({
   const [publishedAt, setPublishedAt] = useState(article?.publishedAt ?? "");
   const [summary, setSummary] = useState(article?.summary ?? "");
   const [content, setContent] = useState(article?.content ?? "");
+  const [externalUrl, setExternalUrl] = useState(article?.externalUrl ?? "");
   const [status, setStatus] = useState<ArticleStatus>(article?.status ?? "DRAFT");
   const [localErrors, setLocalErrors] = useState<Record<string, string>>({});
   const [banner, setBanner] = useState<string | null>(null);
@@ -55,6 +56,7 @@ function ArticleForm({
       publishedAt,
       summary,
       content,
+      externalUrl,
       status
     });
 
@@ -107,7 +109,7 @@ function ArticleForm({
           />
         </Field>
 
-        <Field label="Slug URL" htmlFor="art-slug" error={errors.slug} hint="/catatan-lab/{slug}">
+        <Field label="Slug internal" htmlFor="art-slug" error={errors.slug}>
           <div style={{ display: "flex", gap: 6 }}>
             <input
               id="art-slug"
@@ -187,6 +189,22 @@ function ArticleForm({
         </Field>
 
         <Field
+          label="Tautan publikasi"
+          htmlFor="art-external-url"
+          error={errors.externalUrl}
+          hint="opsional, digunakan sebagai tautan artikel di beranda"
+        >
+          <input
+            id="art-external-url"
+            className="input"
+            type="url"
+            value={externalUrl}
+            onChange={(event) => setExternalUrl(event.target.value)}
+            placeholder="https://contoh.com/artikel"
+          />
+        </Field>
+
+        <Field
           label="Isi Artikel (Markdown)"
           htmlFor="art-content"
           error={errors.content}
@@ -224,7 +242,7 @@ function ArticleForm({
   );
 }
 
-export function JournalModule({ articles }: { articles: Article[] }) {
+export function PublicationsModule({ articles }: { articles: Article[] }) {
   const { run, isSubmitting } = useAdminAction();
   const [statusFilter, setStatusFilter] = useState<"ALL" | ArticleStatus>("ALL");
   const [query, setQuery] = useState("");
@@ -270,13 +288,14 @@ export function JournalModule({ articles }: { articles: Article[] }) {
     <div>
       <div className="admin-head">
         <div>
-          <span className="eyebrow eyebrow--accent">06 / Jurnal Lab</span>
+          <span className="eyebrow eyebrow--accent">06 / Publikasi Artikel</span>
           <h2 className="admin-head__title" style={{ marginTop: 6 }}>
-            Catatan teknis & publikasi
+            Publikasi dan artikel
           </h2>
           <p className="admin-head__sub">
-            Artikel berstatus TERBIT langsung muncul di Catatan Lab; DRAF tetap tersimpan untuk
-            peninjauan. Waktu baca dihitung ulang oleh server dari isi Markdown.
+            Artikel berstatus TERBIT tampil di bagian Publikasi pada beranda. Tambahkan tautan
+            publikasi agar pengunjung dapat membuka artikel; DRAF tetap tersimpan untuk peninjauan.
+            Waktu baca dihitung ulang oleh server dari isi Markdown.
           </p>
         </div>
         <button

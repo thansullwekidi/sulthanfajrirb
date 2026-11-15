@@ -3,9 +3,8 @@ import { MEDIA_PURPOSES, SOCIAL_PLATFORMS } from "./domain";
 import { isSafeHttpUrl } from "./primitives";
 
 /**
- * Kontrak media dan media sosial.
- * Unggahan memakai data URL base64 agar tidak bergantung pada penyimpanan berkas
- * eksternal; server menuliskannya ke `public/media` sebelum URL-nya disimpan.
+ * Kontrak unggahan gambar, CV PDF, dan tautan media sosial.
+ * Unggahan memakai data URL base64; server menyimpan berkas di penyimpanan media lokal.
  */
 
 /** Perkiraan ukuran byte dari string base64 (tanpa padding). */
@@ -15,26 +14,44 @@ export function base64ByteSize(base64: string): number {
   return Math.floor((clean.length * 3) / 4) - padding;
 }
 
-/** Data URL gambar: `data:image/png;base64,…`. */
-export const imageDataUrlSchema = z
+/** Data URL gambar atau PDF CV, keduanya wajib base64. */
+export const mediaDataUrlSchema = z
   .string()
   .trim()
-  .min(1, "Berkas gambar wajib dipilih.")
-  .refine((value) => /^data:image\/[a-z0-9.+-]+;base64,[A-Za-z0-9+/=\s]+$/i.test(value), {
-    message: "Berkas harus berupa data URL gambar base64 yang valid."
-  });
+  .min(1, "Berkas wajib dipilih.")
+  .refine(
+    (value) =>
+      /^data:(?:image\/[a-z0-9.+-]+|application\/pdf);base64,[A-Za-z0-9+/=\s]+$/i.test(value),
+    {
+      message: "Berkas harus berupa gambar atau PDF base64 yang valid."
+    }
+  );
 
-export const mediaUploadSchema = z.object({
-  fileName: z
-    .string()
-    .trim()
-    .min(1, "Nama berkas wajib diisi.")
-    .max(180, "Nama berkas terlalu panjang."),
-  dataUrl: imageDataUrlSchema,
-  purpose: z.enum(MEDIA_PURPOSES, {
-    errorMap: () => ({ message: "Jenis pemakaian media tidak dikenali." })
+export const mediaUploadSchema = z
+  .object({
+    fileName: z
+      .string()
+      .trim()
+      .min(1, "Nama berkas wajib diisi.")
+      .max(180, "Nama berkas terlalu panjang."),
+    dataUrl: mediaDataUrlSchema,
+    purpose: z.enum(MEDIA_PURPOSES, {
+      error: "Jenis pemakaian media tidak dikenali."
+    })
   })
-});
+  .superRefine((input, context) => {
+    const isPdf = /^data:application\/pdf;/i.test(input.dataUrl);
+    if ((input.purpose === "RESUME") !== isPdf) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["dataUrl"],
+        message:
+          input.purpose === "RESUME"
+            ? "Unggah CV dalam format PDF."
+            : "PDF hanya dapat diunggah sebagai CV."
+      });
+    }
+  });
 
 export type MediaUploadInput = z.infer<typeof mediaUploadSchema>;
 
@@ -46,7 +63,7 @@ export const mediaDeleteSchema = z.object({
 /** Tautan media sosial pada profil publik. */
 export const socialLinkInputSchema = z.object({
   platform: z.enum(SOCIAL_PLATFORMS, {
-    errorMap: () => ({ message: "Platform media sosial tidak dikenali." })
+    error: "Platform media sosial tidak dikenali."
   }),
   label: z.string().trim().max(80, "Label media sosial terlalu panjang.").default(""),
   url: z
@@ -64,7 +81,7 @@ export type SocialLinkInput = z.infer<typeof socialLinkInputSchema>;
 
 const socialLinkId = z.string().trim().min(4, "ID media sosial tidak valid.");
 const direction = z.enum(["UP", "DOWN"], {
-  errorMap: () => ({ message: "Arah perpindahan tidak valid." })
+  error: "Arah perpindahan tidak valid."
 });
 
 export const socialMutationSchema = z.discriminatedUnion("action", [

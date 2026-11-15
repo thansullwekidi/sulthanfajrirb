@@ -45,15 +45,17 @@ function strip(html) {
     fs.readFileSync(path.join(process.cwd(), ".data", "portfolio.json"), "utf8")
   );
 
-  const routes = ["/", "/karya", "/rekam-jejak", "/catatan-lab", "/cv", "/kontak"];
+  const routes = ["/", "/cv", "/kontak"];
   const pages = {};
+  const rawPages = {};
   for (const route of routes) {
     const res = await fetch(`${BASE}${route}`);
     if (res.status !== 200) {
       console.log(`  FAIL ${route} mengembalikan HTTP ${res.status}`);
       fail += 1;
     }
-    pages[route] = strip(await res.text());
+    rawPages[route] = await res.text();
+    pages[route] = strip(rawPages[route]);
   }
 
   console.log("== KONFIGURASI ==");
@@ -66,73 +68,68 @@ function strip(html) {
   console.log("\n== PENDIDIKAN: SETIAP ENTRI HARUS TAMPIL DI 3 HALAMAN ==");
   const eduSection = db.profileSections.find((s) => s.kind === "EDUCATION");
   const eduEntries = eduSection ? eduSection.entries.filter((e) => e.visible) : [];
-  check("Bagian Profil", "bagian Pendidikan ada", "/rekam-jejak", Boolean(eduSection));
+  check("Bagian Profil", "bagian Pendidikan ada", "/", Boolean(eduSection));
 
   for (const entry of eduEntries) {
     const key = entry.title.slice(0, 24);
     check("Bagian Profil > Pendidikan", key, "/", pages["/"].includes(key));
-    check("Bagian Profil > Pendidikan", key, "/rekam-jejak", pages["/rekam-jejak"].includes(key));
-    check("Bagian Profil > Pendidikan", key, "/cv", pages["/cv"].includes(key));
   }
 
   console.log("\n== PENGALAMAN ==");
   for (const exp of db.experiences) {
     const key = exp.role.slice(0, 24);
-    check("Rekam Jejak > Pengalaman", key, "/rekam-jejak", pages["/rekam-jejak"].includes(key));
-    check("Rekam Jejak > Pengalaman", key, "/cv", pages["/cv"].includes(key));
+    check("Pengalaman", key, "/", pages["/"].includes(key));
   }
 
   console.log("\n== KEAHLIAN ==");
-  for (const skill of db.skills.slice(0, 3)) {
+  for (const skill of db.skills.filter((item) => item.category === "MEDIA_KREATIF")) {
     check("Tech Stack", skill.name, "/", pages["/"].includes(skill.name));
-    check("Tech Stack", skill.name, "/rekam-jejak", pages["/rekam-jejak"].includes(skill.name));
   }
 
-  console.log("\n== PROYEK: ARSIP TIDAK BOLEH BOCOR ==");
-  const archived = db.projects.filter((p) => p.status === "ARCHIVED");
-  const published = db.projects.filter((p) => p.status === "PUBLISHED");
+  console.log("\n== KATALOG PROYEK DIHAPUS ==");
+  const legacyCatalog = await fetch(`${BASE}/karya`, { redirect: "manual" });
+  check("rute lama /karya dialihkan", String(legacyCatalog.status), "/karya", legacyCatalog.status === 307);
+  check("data proyek dihapus dari berkas basis data", "projects", ".data/portfolio.json", !Object.hasOwn(db, "projects"));
   check(
-    "Manajer Proyek",
-    `${published.length} terbit tampil`,
-    "/karya",
-    published.every((p) => pages["/karya"].includes(p.title.slice(0, 24)))
+    "rekomendasi dipurge dari basis data",
+    "testimonials",
+    ".data/portfolio.json",
+    !Object.hasOwn(db, "testimonials")
   );
   check(
-    "Manajer Proyek",
-    `${archived.length} arsip tidak tampil`,
-    "/karya",
-    archived.every((p) => !pages["/karya"].includes(p.title.slice(0, 24)))
+    "bagian profil lama dipurge",
+    "PROJECTS / RECOMMENDATIONS",
+    ".data/portfolio.json",
+    !db.profileSections.some((s) => ["PROJECTS", "RECOMMENDATIONS"].includes(s.kind))
   );
 
-  console.log("\n== ARTIKEL: DRAF TIDAK BOLEH BOCOR ==");
+  console.log("\n== PUBLIKASI BERANDA: DRAF TIDAK BOLEH BOCOR ==");
   const artPublished = db.articles.filter((a) => a.status === "PUBLISHED");
   const artDraft = db.articles.filter((a) => a.status === "DRAFT");
   check(
-    "Jurnal Lab",
+    "Publikasi Artikel",
     `${artPublished.length} terbit tampil`,
-    "/catatan-lab",
-    artPublished.every((a) => pages["/catatan-lab"].includes(a.title.slice(0, 24)))
+    "/",
+    artPublished.every((a) => pages["/"].includes(a.title.slice(0, 24)))
   );
   check(
-    "Jurnal Lab",
+    "Publikasi Artikel",
     `${artDraft.length} draf tidak tampil`,
-    "/catatan-lab",
-    artDraft.every((a) => !pages["/catatan-lab"].includes(a.title.slice(0, 24)))
+    "/",
+    artDraft.every((a) => !pages["/"].includes(a.title.slice(0, 24)))
   );
-
-  console.log("\n== BAGIAN PROFIL LAIN ==");
-  for (const section of db.profileSections) {
-    if (section.kind === "EDUCATION") continue;
-    const visible = section.entries.filter((e) => e.visible);
-    if (!visible.length) continue;
-    for (const entry of visible.slice(0, 1)) {
-      check(
-        `Bagian Profil > ${section.kind}`,
-        entry.title.slice(0, 24),
-        "/rekam-jejak",
-        pages["/rekam-jejak"].includes(entry.title.slice(0, 24))
-      );
-    }
+  for (const article of artPublished) {
+    const response = await fetch(`${BASE}/publikasi/${encodeURIComponent(article.slug)}`);
+    const html = await response.text();
+    const text = strip(html);
+    const contentPreview = article.content
+      .replace(/[#*_`~>-]/g, " ")
+      .replace(/\s+/g, " ")
+      .trim()
+      .slice(0, 40);
+    check("Publikasi Artikel", article.title, `/publikasi/${article.slug}`, response.status === 200 && html.includes(article.title));
+    check("Publikasi Artikel", "isi artikel", `/publikasi/${article.slug}`, text.includes(contentPreview));
+    check("Publikasi Artikel", "tautan internal dari beranda", "/", rawPages["/"].includes(`/publikasi/${article.slug}`));
   }
 
   console.log("\n== MEDIA SOSIAL ==");
@@ -150,5 +147,5 @@ function strip(html) {
   }
 
   console.log(`\nHASIL: ${pass} lolos, ${fail} gagal\n`);
-  process.exit(fail === 0 ? 0 : 1);
+  process.exitCode = fail === 0 ? 0 : 1;
 })();

@@ -1,10 +1,7 @@
 /**
- * Uji end-to-end kesetaraan fitur LinkedIn:
- * bagian Proyek, foto + tautan profil pemberi rekomendasi, dan keahlian unggulan.
+ * Uji end-to-end bagian profil yang dihapus dan keahlian unggulan.
  */
 const BASE = "http://localhost:3000";
-const PNG_1PX =
-  "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8DwHwAFAAH/q842iQAAAABJRU5ErkJggg==";
 
 let cookie = "";
 let pass = 0;
@@ -51,52 +48,21 @@ async function snapshot() {
   check("login admin", login.json.ok === true);
   if (!login.json.ok) process.exit(1);
 
-  const up = await call("POST", "/api/v1/media", {
-    fileName: "pemberi rekomendasi.png",
-    dataUrl: `data:image/png;base64,${PNG_1PX}`,
-    purpose: "AVATAR"
-  });
-  check("unggah foto pemberi rekomendasi", up.json.ok === true, JSON.stringify(up.json.error ?? {}));
-  const asset = up.json.data;
-
-  console.log("\n== BAGIAN PROYEK ==");
+  console.log("\n== BAGIAN YANG DIHAPUS ==");
   let snap = await snapshot();
-  const tstBaseline = snap.database.testimonials.length;
   const skillsBaseline = snap.database.skills.length;
-  const projectsSection = snap.database.profileSections.find((s) => s.kind === "PROJECTS");
-  check("bagian Proyek tersedia", Boolean(projectsSection), "tidak ditemukan");
-
-  const projEntry = await call("POST", "/api/v1/profile", {
-    action: "entry.create",
-    sectionId: projectsSection.id,
-    entry: {
-      title: "Sistem Identitas Visual TVRI",
-      subtitle: "Desainer Grafis",
-      meta: "",
-      location: "",
-      startDate: "2024",
-      endDate: "2025",
-      isCurrent: false,
-      description: "Merancang panduan identitas visual untuk program berita.",
-      url: "https://example.com/proyek/identitas-tvri",
-      imageUrl: asset.url,
-      logoUrl: "",
-      authors: "Muhammad Sulthan Fajri Rabbani",
-      publisher: "TVRI",
-      tags: "Desain Grafis, Identitas Visual",
-      visible: true
-    }
-  });
-  check("tambah entri proyek", projEntry.json.ok === true, JSON.stringify(projEntry.json.error ?? {}));
-  const projId = projEntry.json.data?.id;
-
-  snap = await snapshot();
-  const savedProj = snap.database.profileSections
-    .find((s) => s.id === projectsSection.id)
-    .entries.find((e) => e.id === projId);
-  check("proyek tersimpan dengan gambar", savedProj?.imageUrl === asset.url, savedProj?.imageUrl);
-  check("proyek menyimpan tautan", savedProj?.url === "https://example.com/proyek/identitas-tvri");
-  check("proyek menyimpan peran", savedProj?.subtitle === "Desainer Grafis");
+  check("rekomendasi terhapus dari basis data", !Object.hasOwn(snap.database, "testimonials"));
+  check(
+    "bagian Proyek dan Rekomendasi tidak ada",
+    !snap.database.profileSections.some((s) => ["PROJECTS", "RECOMMENDATIONS"].includes(s.kind))
+  );
+  for (const kind of ["PROJECTS", "RECOMMENDATIONS"]) {
+    const removedSection = await call("POST", "/api/v1/profile", {
+      action: "section.create",
+      section: { title: "Bagian dihapus", kind, visible: true }
+    });
+    check(`API menolak bagian ${kind}`, removedSection.json.ok === false);
+  }
 
   console.log("\n== KEAHLIAN UNGGULAN ==");
   const skill = await call("POST", "/api/v1/collections/skills", {
@@ -125,44 +91,9 @@ async function snapshot() {
   });
   check("ubah status unggulan", unpin.json.ok === true && unpin.json.data?.pinned === false);
 
-  console.log("\n== REKOMENDASI BERFOTO ==");
-  const tst = await call("POST", "/api/v1/collections/testimonials", {
-    author: "Ratna Kusuma",
-    role: "Kepala Studio",
-    organization: "TVRI Banten",
-    relationship: "Atasan langsung",
-    quote: "Sulthan mengubah cara tim kami memandang identitas visual program berita.",
-    verifiedTag: "Terverifikasi",
-    date: "2025-06-01",
-    avatarUrl: asset.url,
-    profileUrl: "https://www.linkedin.com/in/ratna-kusuma",
-    isVisible: true
-  });
-  check("tambah rekomendasi berfoto", tst.json.ok === true, JSON.stringify(tst.json.error ?? {}));
-  const tstId = tst.json.data?.id;
-
-  snap = await snapshot();
-  const savedTst = snap.database.testimonials.find((t) => t.id === tstId);
-  check("foto pemberi rekomendasi tersimpan", savedTst?.avatarUrl === asset.url, savedTst?.avatarUrl);
-  check(
-    "tautan profil pemberi rekomendasi tersimpan",
-    savedTst?.profileUrl === "https://www.linkedin.com/in/ratna-kusuma",
-    savedTst?.profileUrl
-  );
-
-  const badProfile = await call("POST", "/api/v1/collections/testimonials", {
-    author: "Uji Tolak",
-    role: "Peran",
-    organization: "Instansi",
-    relationship: "",
-    quote: "Kutipan uji yang cukup panjang untuk lolos validasi minimum.",
-    verifiedTag: "Terverifikasi",
-    date: "2025-06-01",
-    avatarUrl: "",
-    profileUrl: "bukan-url",
-    isVisible: true
-  });
-  check("tolak tautan profil tidak valid", badProfile.json.ok === false);
+  console.log("\n== REKOMENDASI DINONAKTIFKAN ==");
+  const legacyRecommendation = await call("POST", "/api/v1/collections/testimonials", {});
+  check("endpoint rekomendasi lama dinonaktifkan", legacyRecommendation.status === 404);
 
   console.log("\n== RENDER PUBLIK ==");
   // Sematkan kembali satu keahlian agar bagian "Keahlian Unggulan" benar-benar teruji.
@@ -177,38 +108,74 @@ async function snapshot() {
   check("sematkan ulang keahlian", pinnedAgain.json.ok === true && pinnedAgain.json.data?.pinned === true);
 
   const home = await (await fetch(`${BASE}/`)).text();
-  check("beranda memuat label Keahlian Unggulan", home.includes("Keahlian Unggulan"));
-  check("beranda memuat nama keahlian unggulan", home.includes("Desain Identitas"));
-  check("beranda memuat foto pemberi rekomendasi", home.includes(asset.url));
-  check("beranda memuat tautan profil pemberi rekomendasi", home.includes("linkedin.com/in/ratna-kusuma"));
+  check("beranda kosong tidak menampilkan label bagian yang belum diaktifkan", !home.includes("Keahlian Unggulan"));
+  check("beranda kosong tidak menampilkan keahlian yang belum diaktifkan", !home.includes("Desain Identitas"));
+  check("beranda tidak menampilkan rekomendasi lama", !home.includes("Rekomendasi Terverifikasi"));
 
-  const rekam = await (await fetch(`${BASE}/rekam-jejak`)).text();
-  check("rekam jejak memuat bagian Proyek", rekam.includes("Sistem Identitas Visual TVRI"));
-  check("rekam jejak memuat tautan proyek", rekam.includes("example.com/proyek/identitas-tvri"));
+  console.log("\n== BAGIAN KUSTOM TAMPIL SETELAH ADA ENTRI ==");
+  const customTitle = `Bagian Kustom Uji ${Date.now()}`;
+  const customSection = await call("POST", "/api/v1/profile", {
+    action: "section.create",
+    section: {
+      title: customTitle,
+      subtitle: "Subjudul bagian kustom",
+      kind: "CUSTOM",
+      visible: true
+    }
+  });
+  check("tambah bagian kustom", customSection.json.ok === true);
+  const customSectionId = customSection.json.data?.id;
+  const homeWithoutCustomEntry = await (await fetch(`${BASE}/`)).text();
+  check(
+    "bagian kosong belum tampil di beranda",
+    !homeWithoutCustomEntry.includes(customTitle)
+  );
+  const customEntryTitle = `Konten Uji ${Date.now()}`;
+  const customEntry = customSectionId
+    ? await call("POST", "/api/v1/profile", {
+        action: "entry.create",
+        sectionId: customSectionId,
+        entry: {
+          title: customEntryTitle,
+          url: "",
+          imageUrl: "",
+          logoUrl: "",
+          visible: true
+        }
+      })
+    : { json: { ok: false } };
+  check(
+    "tambah entri bagian kustom",
+    customEntry.json.ok === true,
+    JSON.stringify(customEntry.json.error ?? customEntry.json)
+  );
+  const homeWithCustomEntry = await (await fetch(`${BASE}/`)).text();
+  check("judul bagian tampil setelah menambah entri", homeWithCustomEntry.includes(customTitle));
+  check(
+    "subjudul bagian tampil setelah menambah entri",
+    homeWithCustomEntry.includes("Subjudul bagian kustom")
+  );
+  check(
+    "konten entri bagian kustom tampil di beranda",
+    homeWithCustomEntry.includes(customEntryTitle)
+  );
+  if (customSectionId) {
+    const deletedSection = await call("POST", "/api/v1/profile", {
+      action: "section.delete",
+      id: customSectionId
+    });
+    check("hapus bagian kustom uji", deletedSection.json.ok === true);
+  } else {
+    check("hapus bagian kustom uji", false, "ID bagian tidak tersedia");
+  }
 
   console.log("\n== PEMBERSIHAN ==");
-  const delProj = await call("POST", "/api/v1/profile", {
-    action: "entry.delete",
-    sectionId: projectsSection.id,
-    entryId: projId
-  });
-  check("hapus entri proyek", delProj.json.ok === true);
-
   const delSkill = await call("DELETE", `/api/v1/collections/skills/${skillId}`);
   check("hapus keahlian uji", delSkill.json.ok === true);
 
-  const delTst = await call("DELETE", `/api/v1/collections/testimonials/${tstId}`);
-  check("hapus rekomendasi uji", delTst.json.ok === true);
-
-  const delMedia = await call("DELETE", "/api/v1/media", { id: asset.id });
-  check("hapus aset media", delMedia.json.ok === true);
-
   snap = await snapshot();
-  check("bagian Proyek kembali kosong",
-    snap.database.profileSections.find((s) => s.id === projectsSection.id).entries.length === 0);
-  check("rekomendasi bersih", snap.database.testimonials.length === tstBaseline);
+  check("rekomendasi tetap terhapus", !Object.hasOwn(snap.database, "testimonials"));
   check("keahlian kembali ke jumlah awal", snap.database.skills.length === skillsBaseline, String(snap.database.skills.length));
-  check("media bersih", snap.database.mediaAssets.length === 0);
 
   console.log(`\nHASIL: ${pass} lolos, ${fail} gagal\n`);
   process.exit(fail === 0 ? 0 : 1);

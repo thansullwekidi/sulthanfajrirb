@@ -1,8 +1,9 @@
 "use client";
 
 import { useId, useRef, useState } from "react";
-import { apiPost } from "@/client/state/api-client";
+import { apiPost, apiRequest } from "@/client/state/api-client";
 import { useAdminAction } from "@/client/state/useAdminAction";
+import { ConfirmModal } from "@/components/cms/ConfirmModal";
 import { Icon } from "@/components/ui/Icon";
 import { MEDIA_MAX_BYTES, type MediaAsset, type MediaPurpose } from "@/contracts/domain";
 import { mediaUploadSchema } from "@/contracts/media.contract";
@@ -31,16 +32,20 @@ export function MediaField({
   purpose,
   value,
   onChange,
+  onUploaded,
   error,
-  id
+  id,
+  previewSize = 46
 }: {
   label: string;
   hint?: string;
   purpose: MediaPurpose;
   value: string;
   onChange: (url: string) => void;
+  onUploaded?: (url: string) => Promise<void>;
   error?: string;
   id?: string;
+  previewSize?: number;
 }) {
   const { run, isSubmitting } = useAdminAction();
   const inputRef = useRef<HTMLInputElement>(null);
@@ -48,6 +53,7 @@ export function MediaField({
   const fieldId = id ?? `media-${autoId}`;
   const [localError, setLocalError] = useState<string | null>(null);
   const [manual, setManual] = useState(false);
+  const [deleteOpen, setDeleteOpen] = useState(false);
 
   const upload = async (file: File) => {
     setLocalError(null);
@@ -87,8 +93,36 @@ export function MediaField({
     if (envelope?.ok) {
       const asset = envelope.data as MediaAsset;
       onChange(asset.url);
+      await onUploaded?.(asset.url);
     } else {
       setLocalError(envelope?.error?.message ?? "Unggahan gagal.");
+    }
+  };
+
+  const mediaId = /^\/api\/v1\/media\/([A-Za-z0-9_-]+)$/.exec(value)?.[1] ?? "";
+  const deleteUploadedImage = async () => {
+    if (!mediaId) {
+      setLocalError("Foto ini bukan aset unggahan lokal yang dapat dihapus.");
+      return;
+    }
+
+    const envelope = await run(
+      () =>
+        apiRequest<{ id: string }>("/api/v1/media", {
+          method: "DELETE",
+          body: JSON.stringify({ id: mediaId })
+        }),
+      {
+        successTitle: "Foto dihapus permanen",
+        successDescription: "Foto dan semua pemakaiannya di situs telah dihapus."
+      }
+    );
+
+    if (envelope?.ok) {
+      onChange("");
+      setDeleteOpen(false);
+    } else {
+      setLocalError(envelope?.error?.message ?? "Foto gagal dihapus.");
     }
   };
 
@@ -110,8 +144,8 @@ export function MediaField({
       >
         <div
           style={{
-            width: 46,
-            height: 46,
+            width: previewSize,
+            height: previewSize,
             flex: "0 0 auto",
             border: "1px solid var(--line)",
             display: "grid",
@@ -148,9 +182,21 @@ export function MediaField({
               className="btn btn--sm btn--quiet"
               onClick={() => onChange("")}
               disabled={isSubmitting}
+              title="Lepaskan foto dari kolom ini; berkas tetap ada di pustaka media"
+            >
+              Lepas
+            </button>
+          ) : null}
+          {mediaId ? (
+            <button
+              type="button"
+              className="btn btn--sm btn--quiet"
+              onClick={() => setDeleteOpen(true)}
+              disabled={isSubmitting}
+              style={{ color: "var(--danger)" }}
             >
               <Icon name="trash" size={11} />
-              Lepas
+              Hapus permanen
             </button>
           ) : null}
           <button
@@ -190,6 +236,18 @@ export function MediaField({
 
       {error || localError ? (
         <span className="field__error">{error ?? localError}</span>
+      ) : null}
+
+      {deleteOpen ? (
+        <ConfirmModal
+          title="Hapus foto permanen?"
+          description="Berkas akan dihapus dari penyimpanan dan semua referensi foto ini pada situs akan dilepas. Tindakan ini tidak dapat dibatalkan."
+          confirmLabel="Hapus Foto"
+          tone="danger"
+          busy={isSubmitting}
+          onCancel={() => setDeleteOpen(false)}
+          onConfirm={() => void deleteUploadedImage()}
+        />
       ) : null}
     </div>
   );

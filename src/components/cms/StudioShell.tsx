@@ -2,32 +2,26 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { apiPost } from "@/client/state/api-client";
 import { useStudio } from "@/client/state/StudioProvider";
 import { AuditModule } from "@/components/cms/AuditModule";
 import { InboxModule } from "@/components/cms/InboxModule";
-import { JournalModule } from "@/components/cms/JournalModule";
 import { ProfileModule } from "@/components/cms/ProfileModule";
-import { ProjectsModule } from "@/components/cms/ProjectsModule";
+import { PublicationsModule } from "@/components/cms/PublicationsModule";
 import { SettingsModule } from "@/components/cms/SettingsModule";
 import { SkillsModule } from "@/components/cms/SkillsModule";
 import { SocialModule } from "@/components/cms/SocialModule";
-import { TestimonialsModule } from "@/components/cms/TestimonialsModule";
 import { TrajectoryModule } from "@/components/cms/TrajectoryModule";
-import { TrashModule } from "@/components/cms/TrashModule";
 import { Icon, type IconName } from "@/components/ui/Icon";
 import type { AdminSession } from "@/contracts/auth.contract";
 import { formatDateTimeId } from "@/contracts/primitives";
 
 type ModuleKey =
-  | "proyek"
-  | "sampah"
   | "rekam-jejak"
   | "profil"
   | "tech-stack"
-  | "jurnal"
-  | "rekomendasi"
+  | "publikasi"
   | "kotak-masuk"
   | "media-sosial"
   | "konfigurasi"
@@ -51,32 +45,30 @@ interface ModuleBadge {
 }
 
 const MODULES: ModuleDefinition[] = [
-  { key: "proyek", index: "01", label: "Manajer Proyek", icon: "grid", hash: "#proyek" },
-  { key: "sampah", index: "02", label: "Tempat Sampah", icon: "archive", hash: "#sampah" },
-  { key: "rekam-jejak", index: "03", label: "Rekam Jejak", icon: "clock", hash: "#rekam-jejak" },
-  { key: "profil", index: "04", label: "Bagian Profil", icon: "user", hash: "#profil" },
-  { key: "tech-stack", index: "05", label: "Tech Stack", icon: "code", hash: "#tech-stack" },
-  { key: "jurnal", index: "06", label: "Jurnal Lab", icon: "book", hash: "#jurnal" },
-  { key: "rekomendasi", index: "07", label: "Rekomendasi", icon: "star", hash: "#rekomendasi" },
-  { key: "kotak-masuk", index: "08", label: "Kotak Masuk", icon: "mail", hash: "#kotak-masuk" },
-  { key: "media-sosial", index: "10", label: "Media & Sosial", icon: "spark", hash: "#media-sosial" },
-  { key: "konfigurasi", index: "11", label: "Konfigurasi", icon: "lock", hash: "#konfigurasi" },
-  { key: "audit", index: "12", label: "Log Audit", icon: "table", hash: "#audit" }
+  { key: "rekam-jejak", index: "01", label: "Pengalaman & Sertifikasi", icon: "clock", hash: "#rekam-jejak" },
+  { key: "profil", index: "02", label: "Bagian Profil", icon: "user", hash: "#profil" },
+  { key: "tech-stack", index: "03", label: "Media & Desain", icon: "spark", hash: "#tech-stack" },
+  { key: "publikasi", index: "04", label: "Publikasi Artikel", icon: "book", hash: "#publikasi" },
+  { key: "kotak-masuk", index: "05", label: "Kotak Masuk", icon: "mail", hash: "#kotak-masuk" },
+  { key: "media-sosial", index: "06", label: "Media & Sosial", icon: "spark", hash: "#media-sosial" },
+  { key: "konfigurasi", index: "07", label: "Konfigurasi", icon: "lock", hash: "#konfigurasi" },
+  { key: "audit", index: "08", label: "Log Audit", icon: "table", hash: "#audit" }
 ];
 
 const MODULE_KEYS = new Set<string>(MODULES.map((module) => module.key));
 
 function readHash(): ModuleKey {
   const raw = window.location.hash.replace(/^#/, "").trim();
-  const alias = raw === "testimoni" ? "rekomendasi" : raw;
-  return MODULE_KEYS.has(alias) ? (alias as ModuleKey) : "proyek";
+  if (raw === "jurnal") return "publikasi";
+  return MODULE_KEYS.has(raw) ? (raw as ModuleKey) : "rekam-jejak";
 }
 
 export function StudioShell({ session }: { session: AdminSession }) {
   const router = useRouter();
   const { snapshot, loading, error, lastSyncedAt, refresh } = useStudio();
-  const [active, setActive] = useState<ModuleKey>("proyek");
+  const [active, setActive] = useState<ModuleKey>("rekam-jejak");
   const [signingOut, setSigningOut] = useState(false);
+  const navRef = useRef<HTMLElement>(null);
 
   useEffect(() => {
     const sync = () => setActive(readHash());
@@ -84,6 +76,12 @@ export function StudioShell({ session }: { session: AdminSession }) {
     window.addEventListener("hashchange", sync);
     return () => window.removeEventListener("hashchange", sync);
   }, []);
+
+  useEffect(() => {
+    navRef.current
+      ?.querySelector<HTMLElement>('[data-active="true"]')
+      ?.scrollIntoView({ block: "nearest", inline: "nearest" });
+  }, [active]);
 
   const select = (key: ModuleKey) => {
     setActive(key);
@@ -109,13 +107,10 @@ export function StudioShell({ session }: { session: AdminSession }) {
   const moduleBadge = useMemo<Record<ModuleKey, ModuleBadge | null>>(() => {
     if (!snapshot) {
       return {
-        proyek: null,
-        sampah: null,
         "rekam-jejak": null,
         profil: null,
         "tech-stack": null,
-        jurnal: null,
-        rekomendasi: null,
+        publikasi: null,
         "kotak-masuk": null,
         "media-sosial": null,
         konfigurasi: null,
@@ -124,7 +119,6 @@ export function StudioShell({ session }: { session: AdminSession }) {
     }
 
     const { counts: c, database } = snapshot;
-    const activeProjects = c.projectsPublished + c.projectsDraft;
     const filledSections = database.profileSections.filter(
       (section) => section.entries.length > 0
     ).length;
@@ -134,16 +128,6 @@ export function StudioShell({ session }: { session: AdminSession }) {
     const unread = c.inquiriesUnread;
 
     return {
-      proyek: {
-        text: String(activeProjects),
-        hint:
-          `${c.projectsPublished} terbit, ${c.projectsDraft} draf, ` +
-          `${c.projectsArchived} di tempat sampah`
-      },
-      sampah: {
-        text: String(c.projectsArchived),
-        hint: `${c.projectsArchived} proyek menunggu hapus permanen`
-      },
       "rekam-jejak": {
         text: String(database.experiences.length + database.certifications.length),
         hint: `${database.experiences.length} pengalaman, ${database.certifications.length} sertifikasi`
@@ -158,13 +142,9 @@ export function StudioShell({ session }: { session: AdminSession }) {
         text: String(c.skills),
         hint: `${c.skills} keahlian`
       },
-      jurnal: {
+      publikasi: {
         text: `${publishedArticles}/${c.articles}`,
         hint: `${publishedArticles} terbit, ${c.articles - publishedArticles} draf`
-      },
-      rekomendasi: {
-        text: String(database.testimonials.length),
-        hint: `${database.testimonials.length} rekomendasi`
       },
       "kotak-masuk": {
         text: String(unread),
@@ -187,10 +167,6 @@ export function StudioShell({ session }: { session: AdminSession }) {
     const database = snapshot.database;
 
     switch (active) {
-      case "proyek":
-        return <ProjectsModule projects={database.projects} />;
-      case "sampah":
-        return <TrashModule projects={database.projects} />;
       case "rekam-jejak":
         return (
           <TrajectoryModule
@@ -202,10 +178,8 @@ export function StudioShell({ session }: { session: AdminSession }) {
         return <ProfileModule sections={database.profileSections} />;
       case "tech-stack":
         return <SkillsModule skills={database.skills} />;
-      case "jurnal":
-        return <JournalModule articles={database.articles} />;
-      case "rekomendasi":
-        return <TestimonialsModule testimonials={database.testimonials} />;
+      case "publikasi":
+        return <PublicationsModule articles={database.articles} />;
       case "kotak-masuk":
         return <InboxModule inquiries={database.inquiries} />;
       case "media-sosial":
@@ -233,7 +207,7 @@ export function StudioShell({ session }: { session: AdminSession }) {
           </span>
         </div>
 
-        <nav className="admin-nav" aria-label="Modul Studio">
+        <nav ref={navRef} className="admin-nav" aria-label="Modul Studio">
           {MODULES.map((module) => {
             const badge = moduleBadge[module.key];
             const isAlert = module.key === "kotak-masuk" && Boolean(badge && counts?.inquiriesUnread);
@@ -248,7 +222,7 @@ export function StudioShell({ session }: { session: AdminSession }) {
                 title={badge?.hint}
               >
                 <span className="admin-nav__index">{module.index}</span>
-                <span style={{ display: "flex", alignItems: "center", gap: 7 }}>
+                <span className="admin-nav__label">
                   <Icon name={module.icon} size={11} />
                   {module.label}
                 </span>
@@ -268,7 +242,7 @@ export function StudioShell({ session }: { session: AdminSession }) {
         </nav>
 
         <div className="admin-rail__foot">
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
+          <div className="admin-rail__sync">
             <span className="admin-rail__meta">
               {loading ? "MENYINKRONKAN…" : lastSyncedAt ? `SINKRON ${formatDateTimeId(lastSyncedAt)}` : "BELUM TERSINKRON"}
             </span>
@@ -285,13 +259,13 @@ export function StudioShell({ session }: { session: AdminSession }) {
             </button>
           </div>
 
-          <div style={{ display: "flex", alignItems: "center", gap: 5, color: "var(--muted)" }}>
+          <div className="admin-rail__shortcut">
             <kbd className="kbd">Ctrl</kbd>
             <kbd className="kbd">K</kbd>
             <span className="admin-rail__meta">palet perintah</span>
           </div>
 
-          <div style={{ display: "flex", gap: 6, marginTop: 2 }}>
+          <div className="admin-rail__actions">
             <Link href="/" className="btn btn--sm" style={{ flex: 1, justifyContent: "center" }}>
               <Icon name="arrow-up-right" size={11} />
               Situs
@@ -308,7 +282,7 @@ export function StudioShell({ session }: { session: AdminSession }) {
             </button>
           </div>
 
-          <span className="mono" style={{ fontSize: 8, color: "var(--muted)", lineHeight: 1.6 }}>
+          <span className="admin-rail__note mono">
             SELURUH MUTASI DICATAT PADA LOG AUDIT IMMUTABLE.
           </span>
         </div>

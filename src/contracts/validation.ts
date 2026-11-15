@@ -13,7 +13,7 @@ export function fieldErrorsFromZod(error: z.ZodError): Record<string, string> {
 
 export const nonEmptyText = (label: string, min: number, max: number) =>
   z
-    .string({ required_error: `${label} wajib diisi.` })
+    .string({ error: `${label} wajib diisi.` })
     .trim()
     .min(min, `${label} minimal ${min} karakter.`)
     .max(max, `${label} maksimal ${max} karakter.`);
@@ -50,7 +50,7 @@ export const optionalDateIso = (label: string) =>
     });
 
 export const emailField = z
-  .string({ required_error: "Alamat surel wajib diisi." })
+  .string({ error: "Alamat surel wajib diisi." })
   .trim()
   .min(5, "Alamat surel terlalu pendek.")
   .max(180, "Alamat surel terlalu panjang.")

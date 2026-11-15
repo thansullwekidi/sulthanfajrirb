@@ -9,9 +9,10 @@ import { useMutationLock } from "@/client/state/useMutationLock";
 import { ConfirmModal } from "@/components/cms/ConfirmModal";
 import { Field } from "@/components/cms/Field";
 import { MediaField } from "@/components/cms/MediaField";
+import { ResumeField } from "@/components/cms/ResumeField";
 import { Icon } from "@/components/ui/Icon";
 import { siteConfigInputSchema } from "@/contracts/config.contract";
-import type { SiteConfig } from "@/contracts/domain";
+import type { HomepageSections, SiteConfig } from "@/contracts/domain";
 import { formatDateTimeId } from "@/contracts/primitives";
 import { fieldErrorsFromZod } from "@/contracts/validation";
 
@@ -28,7 +29,7 @@ function countSummary(payload: unknown): string {
   if (!candidate || typeof candidate !== "object") return "Struktur basis data tidak dikenali.";
   const record = candidate as Record<string, unknown>;
   const count = (key: string) => (Array.isArray(record[key]) ? record[key].length : 0);
-  return `${count("projects")} proyek · ${count("articles")} artikel · ${count("skills")} keahlian · ${count("testimonials")} rekomendasi`;
+  return `${count("articles")} artikel · ${count("skills")} keahlian · ${count("mediaAssets")} aset media`;
 }
 
 export function SettingsModule({ config }: { config: SiteConfig }) {
@@ -52,17 +53,13 @@ export function SettingsModule({ config }: { config: SiteConfig }) {
   const [avatarUrl, setAvatarUrl] = useState(config.avatarUrl);
   const [coverImageUrl, setCoverImageUrl] = useState(config.coverImageUrl);
   const [pronouns, setPronouns] = useState(config.pronouns);
-  const [connections, setConnections] = useState(config.connections);
-  const [followers, setFollowers] = useState(config.followers);
   const [availability, setAvailability] = useState(config.availability);
   const [availabilityNote, setAvailabilityNote] = useState(config.availabilityNote);
   const [openToWork, setOpenToWork] = useState(config.openToWork);
   const [openToWorkNote, setOpenToWorkNote] = useState(config.openToWorkNote);
-  const [cvVersion, setCvVersion] = useState(config.cvVersion);
-  const [cvMaxExperiences, setCvMaxExperiences] = useState(config.cvMaxExperiences);
-  const [cvMaxProjects, setCvMaxProjects] = useState(config.cvMaxProjects);
-  const [cvMaxCertifications, setCvMaxCertifications] = useState(config.cvMaxCertifications);
+  const [resumeUrl, setResumeUrl] = useState(config.resumeUrl);
   const [education, setEducation] = useState(config.education);
+  const [homepageSections, setHomepageSections] = useState(config.homepageSections);
 
   const [localErrors, setLocalErrors] = useState<Record<string, string>>({});
   const [banner, setBanner] = useState<string | null>(null);
@@ -87,18 +84,38 @@ export function SettingsModule({ config }: { config: SiteConfig }) {
     setAvatarUrl(config.avatarUrl);
     setCoverImageUrl(config.coverImageUrl);
     setPronouns(config.pronouns);
-    setConnections(config.connections);
-    setFollowers(config.followers);
     setAvailability(config.availability);
     setAvailabilityNote(config.availabilityNote);
     setOpenToWork(config.openToWork);
     setOpenToWorkNote(config.openToWorkNote);
-    setCvVersion(config.cvVersion);
-    setCvMaxExperiences(config.cvMaxExperiences);
-    setCvMaxProjects(config.cvMaxProjects);
-    setCvMaxCertifications(config.cvMaxCertifications);
+    setResumeUrl(config.resumeUrl);
     setEducation(config.education);
-  }, [config]);
+    setHomepageSections(config.homepageSections);
+  }, [config.updatedAt]);
+
+  const saveProfilePhoto = async (url: string) => {
+    setAvatarUrl(url);
+    const envelope = await run(
+      () => apiPatch<SiteConfig>("/api/v1/config", { ...config, avatarUrl: url }),
+      {
+        successTitle: "Foto profil diterapkan",
+        successDescription: "Foto baru langsung ditampilkan di halaman utama."
+      }
+    );
+    if (!envelope?.ok) {
+      setAvatarUrl(config.avatarUrl);
+    }
+  };
+
+  const updateHomepageSection = <K extends keyof HomepageSections>(
+    key: K,
+    updates: Partial<HomepageSections[K]>
+  ) => {
+    setHomepageSections((current) => ({
+      ...current,
+      [key]: { ...current[key], ...updates }
+    }));
+  };
 
   const save = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -121,17 +138,13 @@ export function SettingsModule({ config }: { config: SiteConfig }) {
       avatarUrl,
       coverImageUrl,
       pronouns,
-      connections,
-      followers,
       availability,
       availabilityNote,
       openToWork,
       openToWorkNote,
-      cvVersion,
-      cvMaxExperiences,
-      cvMaxProjects,
-      cvMaxCertifications,
-      education
+      resumeUrl,
+      education,
+      homepageSections
     });
 
     if (!parsed.success) {
@@ -231,8 +244,8 @@ export function SettingsModule({ config }: { config: SiteConfig }) {
           </h2>
           <p className="admin-head__sub">
             Konfigurasi ini memasok nama, bio, tautan, dan status ketersediaan ke seluruh halaman
-            publik sekaligus generator CV ATS. Ekspor JSON adalah salinan penuh yang dapat
-            diimpor kembali.
+            publik. CV tidak dibuat otomatis: unggah PDF buatan Anda sendiri. Ekspor JSON adalah
+            salinan penuh yang dapat diimpor kembali.
           </p>
         </div>
         <span className="mono" style={{ fontSize: 9, color: "var(--muted)" }}>
@@ -370,37 +383,48 @@ export function SettingsModule({ config }: { config: SiteConfig }) {
               </Field>
             </div>
 
-            <div className="form-row-2">
-              <Field label="Koneksi" htmlFor="cfg-connections" error={errors.connections}>
-                <input
-                  id="cfg-connections"
-                  type="number"
-                  min={0}
-                  className="input mono"
-                  value={connections}
-                  onChange={(event) => setConnections(Number(event.target.value))}
-                />
-              </Field>
-              <Field label="Pengikut" htmlFor="cfg-followers" error={errors.followers}>
-                <input
-                  id="cfg-followers"
-                  type="number"
-                  min={0}
-                  className="input mono"
-                  value={followers}
-                  onChange={(event) => setFollowers(Number(event.target.value))}
-                />
-              </Field>
-            </div>
-
             <MediaField
               id="cfg-avatar"
-              label="Foto Profil"
-              hint="opsional, tampil di beranda & CV"
+              label="Foto Profil Halaman Utama"
+              hint="Unggah foto potret agar tampil menonjol di bagian ringkasan beranda."
               purpose="AVATAR"
               value={avatarUrl}
               onChange={setAvatarUrl}
+              onUploaded={saveProfilePhoto}
               error={errors.avatarUrl}
+              previewSize={84}
+            />
+            {snapshot?.database.mediaAssets.some((asset) => asset.purpose === "AVATAR") ? (
+              <div className="field">
+                <span className="eyebrow">Foto profil tersimpan</span>
+                <div className="profile-photo-picker">
+                  {snapshot.database.mediaAssets
+                    .filter((asset) => asset.purpose === "AVATAR")
+                    .map((asset) => (
+                      <div className="profile-photo-picker__item" key={asset.id}>
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img src={asset.url} alt={asset.fileName} loading="lazy" />
+                        <span title={asset.fileName}>{asset.fileName}</span>
+                        <button
+                          type="button"
+                          className="btn btn--sm"
+                          onClick={() => void saveProfilePhoto(asset.url)}
+                          disabled={isSubmitting || avatarUrl === asset.url}
+                        >
+                          {avatarUrl === asset.url ? "Foto aktif" : "Gunakan foto"}
+                        </button>
+                      </div>
+                    ))}
+                </div>
+              </div>
+            ) : null}
+
+            <ResumeField
+              value={resumeUrl}
+              fileName={
+                snapshot?.database.mediaAssets.find((asset) => asset.url === resumeUrl)?.fileName ?? ""
+              }
+              onChange={setResumeUrl}
             />
 
             <MediaField
@@ -433,79 +457,18 @@ export function SettingsModule({ config }: { config: SiteConfig }) {
               />
             </Field>
 
-            <div className="form-row-2">
-              <Field label="Versi CV" htmlFor="cfg-cv" error={errors.cvVersion}>
-                <input
-                  id="cfg-cv"
-                  className="input mono"
-                  value={cvVersion}
-                  onChange={(event) => setCvVersion(event.target.value)}
-                />
-              </Field>
-              <Field
-                label="Catatan Ketersediaan"
-                htmlFor="cfg-availability-note"
-                error={errors.availabilityNote}
-              >
-                <input
-                  id="cfg-availability-note"
-                  className="input"
-                  value={availabilityNote}
-                  onChange={(event) => setAvailabilityNote(event.target.value)}
-                />
-              </Field>
-            </div>
-
-            <div className="form-row-3">
-              <Field
-                label="Batas Pengalaman CV"
-                htmlFor="cfg-cv-max-exp"
-                error={errors.cvMaxExperiences}
-                hint="jumlah entri di CV ATS"
-              >
-                <input
-                  id="cfg-cv-max-exp"
-                  className="input mono"
-                  type="number"
-                  min={0}
-                  max={20}
-                  value={cvMaxExperiences}
-                  onChange={(event) => setCvMaxExperiences(Number(event.target.value))}
-                />
-              </Field>
-              <Field
-                label="Batas Proyek CV"
-                htmlFor="cfg-cv-max-proj"
-                error={errors.cvMaxProjects}
-                hint="jumlah entri di CV ATS"
-              >
-                <input
-                  id="cfg-cv-max-proj"
-                  className="input mono"
-                  type="number"
-                  min={0}
-                  max={20}
-                  value={cvMaxProjects}
-                  onChange={(event) => setCvMaxProjects(Number(event.target.value))}
-                />
-              </Field>
-              <Field
-                label="Batas Sertifikasi CV"
-                htmlFor="cfg-cv-max-cert"
-                error={errors.cvMaxCertifications}
-                hint="jumlah entri di CV ATS"
-              >
-                <input
-                  id="cfg-cv-max-cert"
-                  className="input mono"
-                  type="number"
-                  min={0}
-                  max={20}
-                  value={cvMaxCertifications}
-                  onChange={(event) => setCvMaxCertifications(Number(event.target.value))}
-                />
-              </Field>
-            </div>
+            <Field
+              label="Catatan Ketersediaan"
+              htmlFor="cfg-availability-note"
+              error={errors.availabilityNote}
+            >
+              <input
+                id="cfg-availability-note"
+                className="input"
+                value={availabilityNote}
+                onChange={(event) => setAvailabilityNote(event.target.value)}
+              />
+            </Field>
 
             <label className="check-row">
               <input
@@ -539,9 +502,239 @@ export function SettingsModule({ config }: { config: SiteConfig }) {
               />
             </Field>
 
+            <div className="stack" style={{ gap: 12, borderTop: "1px solid var(--line)", paddingTop: 16 }}>
+              <div>
+                <span className="eyebrow eyebrow--accent">Konten Halaman Utama</span>
+                <p style={{ fontSize: 11.5, color: "var(--muted)", lineHeight: 1.65, marginTop: 5 }}>
+                  Atur lima bagian beranda. Pengalaman, sertifikasi, keahlian, dan artikel
+                  tetap dikelola melalui modul masing-masing.
+                </p>
+              </div>
+
+              <div className="stack" style={{ gap: 10, border: "1px solid var(--line)", padding: 12 }}>
+                <strong className="mono" style={{ fontSize: 10 }}>01 / Identitas Utama</strong>
+                <label className="check-row">
+                  <input
+                    type="checkbox"
+                    checked={homepageSections.hero.visible}
+                    onChange={(event) =>
+                      updateHomepageSection("hero", { visible: event.target.checked })
+                    }
+                  />
+                  Tampilkan bagian identitas
+                </label>
+                <Field label="Teks pembuka" htmlFor="home-hero-eyebrow">
+                  <input
+                    id="home-hero-eyebrow"
+                    className="input"
+                    value={homepageSections.hero.eyebrow}
+                    onChange={(event) =>
+                      updateHomepageSection("hero", { eyebrow: event.target.value })
+                    }
+                  />
+                </Field>
+                <div className="form-row-3">
+                  <Field label="Tombol CV" htmlFor="home-hero-cv">
+                    <input
+                      id="home-hero-cv"
+                      className="input"
+                      value={homepageSections.hero.primaryCtaLabel}
+                      onChange={(event) =>
+                        updateHomepageSection("hero", { primaryCtaLabel: event.target.value })
+                      }
+                    />
+                  </Field>
+                  <Field label="Tombol kontak" htmlFor="home-hero-contact">
+                    <input
+                      id="home-hero-contact"
+                      className="input"
+                      value={homepageSections.hero.contactCtaLabel}
+                      onChange={(event) =>
+                        updateHomepageSection("hero", { contactCtaLabel: event.target.value })
+                      }
+                    />
+                  </Field>
+                  <Field label="Tombol GitHub" htmlFor="home-hero-repo">
+                    <input
+                      id="home-hero-repo"
+                      className="input"
+                      value={homepageSections.hero.repositoryCtaLabel}
+                      onChange={(event) =>
+                        updateHomepageSection("hero", { repositoryCtaLabel: event.target.value })
+                      }
+                    />
+                  </Field>
+                </div>
+              </div>
+
+              <div className="stack" style={{ gap: 10, border: "1px solid var(--line)", padding: 12 }}>
+                <strong className="mono" style={{ fontSize: 10 }}>02 / Linimasa Pengalaman</strong>
+                <label className="check-row">
+                  <input
+                    type="checkbox"
+                    checked={homepageSections.experienceTimeline.visible}
+                    onChange={(event) =>
+                      updateHomepageSection("experienceTimeline", { visible: event.target.checked })
+                    }
+                  />
+                  Tampilkan linimasa pengalaman
+                </label>
+                <Field label="Judul bagian" htmlFor="home-timeline-title">
+                  <input
+                    id="home-timeline-title"
+                    className="input"
+                    value={homepageSections.experienceTimeline.title}
+                    onChange={(event) =>
+                      updateHomepageSection("experienceTimeline", { title: event.target.value })
+                    }
+                  />
+                </Field>
+                <Field label="Deskripsi" htmlFor="home-timeline-description">
+                  <textarea
+                    id="home-timeline-description"
+                    className="textarea"
+                    rows={3}
+                    value={homepageSections.experienceTimeline.description}
+                    onChange={(event) =>
+                      updateHomepageSection("experienceTimeline", {
+                        description: event.target.value
+                      })
+                    }
+                  />
+                </Field>
+              </div>
+
+              <div className="stack" style={{ gap: 10, border: "1px solid var(--line)", padding: 12 }}>
+                <strong className="mono" style={{ fontSize: 10 }}>03 / Sertifikasi</strong>
+                <label className="check-row">
+                  <input
+                    type="checkbox"
+                    checked={homepageSections.certifications.visible}
+                    onChange={(event) =>
+                      updateHomepageSection("certifications", { visible: event.target.checked })
+                    }
+                  />
+                  Tampilkan sertifikasi
+                </label>
+                <Field label="Judul bagian" htmlFor="home-certifications-title">
+                  <input
+                    id="home-certifications-title"
+                    className="input"
+                    value={homepageSections.certifications.title}
+                    onChange={(event) =>
+                      updateHomepageSection("certifications", { title: event.target.value })
+                    }
+                  />
+                </Field>
+                <Field label="Deskripsi" htmlFor="home-certifications-description">
+                  <textarea
+                    id="home-certifications-description"
+                    className="textarea"
+                    rows={3}
+                    value={homepageSections.certifications.description}
+                    onChange={(event) =>
+                      updateHomepageSection("certifications", { description: event.target.value })
+                    }
+                  />
+                </Field>
+              </div>
+
+              <div className="stack" style={{ gap: 10, border: "1px solid var(--line)", padding: 12 }}>
+                <strong className="mono" style={{ fontSize: 10 }}>05 / Media & Desain</strong>
+                <label className="check-row">
+                  <input
+                    type="checkbox"
+                    checked={homepageSections.skills.visible}
+                    onChange={(event) =>
+                      updateHomepageSection("skills", { visible: event.target.checked })
+                    }
+                  />
+                  Tampilkan Media & Desain
+                </label>
+                <Field label="Judul bagian" htmlFor="home-skills-title">
+                  <input
+                    id="home-skills-title"
+                    className="input"
+                    value={homepageSections.skills.title}
+                    onChange={(event) =>
+                      updateHomepageSection("skills", { title: event.target.value })
+                    }
+                  />
+                </Field>
+                <Field label="Deskripsi" htmlFor="home-skills-description">
+                  <textarea
+                    id="home-skills-description"
+                    className="textarea"
+                    rows={3}
+                    value={homepageSections.skills.description}
+                    onChange={(event) =>
+                      updateHomepageSection("skills", { description: event.target.value })
+                    }
+                  />
+                </Field>
+                <Field label="Label keahlian unggulan" htmlFor="home-skills-featured">
+                  <input
+                    id="home-skills-featured"
+                    className="input"
+                    value={homepageSections.skills.featuredLabel}
+                    onChange={(event) =>
+                      updateHomepageSection("skills", { featuredLabel: event.target.value })
+                    }
+                  />
+                </Field>
+              </div>
+
+              <div className="stack" style={{ gap: 10, border: "1px solid var(--line)", padding: 12 }}>
+                <strong className="mono" style={{ fontSize: 10 }}>
+                  06 / Publikasi Artikel
+                </strong>
+                <label className="check-row">
+                  <input
+                    type="checkbox"
+                    checked={homepageSections.publications.visible}
+                    onChange={(event) =>
+                      updateHomepageSection("publications", { visible: event.target.checked })
+                    }
+                  />
+                  Tampilkan publikasi artikel
+                </label>
+                <Field label="Judul bagian" htmlFor="home-publications-title">
+                  <input
+                    id="home-publications-title"
+                    className="input"
+                    value={homepageSections.publications.title}
+                    onChange={(event) =>
+                      updateHomepageSection("publications", { title: event.target.value })
+                    }
+                  />
+                </Field>
+                <Field label="Deskripsi" htmlFor="home-publications-description">
+                  <textarea
+                    id="home-publications-description"
+                    className="textarea"
+                    rows={3}
+                    value={homepageSections.publications.description}
+                    onChange={(event) =>
+                      updateHomepageSection("publications", { description: event.target.value })
+                    }
+                  />
+                </Field>
+                <Field label="Label tautan artikel" htmlFor="home-publications-link">
+                  <input
+                    id="home-publications-link"
+                    className="input"
+                    value={homepageSections.publications.linkLabel}
+                    onChange={(event) =>
+                      updateHomepageSection("publications", { linkLabel: event.target.value })
+                    }
+                  />
+                </Field>
+              </div>
+            </div>
+
             <div className="form-actions">
               <span className="form-note">
-                {isSubmitting ? "Mutex aktif — klik ganda diabaikan." : "Berlaku di 6 halaman publik."}
+                {isSubmitting ? "Mutex aktif — klik ganda diabaikan." : "Berlaku di beranda dan situs publik."}
               </span>
               <button type="submit" className="btn btn--primary" disabled={isSubmitting}>
                 {isSubmitting ? "Menyimpan…" : "Simpan Konfigurasi"}
@@ -560,9 +753,10 @@ export function SettingsModule({ config }: { config: SiteConfig }) {
             </div>
             <div className="panel__body stack" style={{ gap: 12 }}>
               <p style={{ fontSize: 11.5, color: "var(--muted)", lineHeight: 1.65 }}>
-                Ekspor menghasilkan satu berkas JSON berisi proyek, rekam jejak, keahlian, jurnal,
-                rekomendasi, kotak masuk, konfigurasi, dan seluruh log audit. Impor memvalidasi
-                ulang setiap kolom melalui kontrak skema server sebelum menimpa basis data.
+                Ekspor menghasilkan satu berkas JSON berisi pengalaman, sertifikasi, keahlian,
+                publikasi artikel, kotak masuk, konfigurasi, dan seluruh log audit. Impor
+                memvalidasi ulang setiap kolom melalui kontrak skema server sebelum menimpa basis
+                data.
               </p>
 
               <div className="form-row-2">
@@ -570,7 +764,7 @@ export function SettingsModule({ config }: { config: SiteConfig }) {
                   <input
                     id="cfg-export"
                     className="input mono"
-                    value={counts ? `${counts.projectsPublished + counts.projectsDraft + counts.projectsArchived} proyek · ${counts.articles} artikel` : "—"}
+                    value={counts ? `${counts.articles} artikel · ${counts.skills} keahlian` : "—"}
                     readOnly
                     tabIndex={-1}
                   />
@@ -655,7 +849,7 @@ export function SettingsModule({ config }: { config: SiteConfig }) {
       {resetOpen ? (
         <ConfirmModal
           title="Reset seluruh basis data?"
-          description="Semua proyek, artikel, keahlian, rekomendasi, pesan, dan log audit akan dikembalikan ke data standar pabrik. Ekspor cadangan terlebih dahulu bila ragu."
+          description="Semua konten, profil, media, pesan, dan log audit akan dikembalikan ke data standar pabrik. Ekspor cadangan terlebih dahulu bila ragu."
           confirmLabel="Reset Sekarang"
           tone="danger"
           busy={isSubmitting}

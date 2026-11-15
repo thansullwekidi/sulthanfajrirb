@@ -8,8 +8,7 @@ import { Field } from "@/components/cms/Field";
 import { Icon } from "@/components/ui/Icon";
 import { skillInputSchema } from "@/contracts/content.contract";
 import {
-  CATEGORY_LABELS,
-  SKILL_DOMAINS,
+  SKILL_DOMAIN_LABELS,
   type Skill,
   type SkillDomain
 } from "@/contracts/domain";
@@ -24,7 +23,7 @@ function SkillForm({
 }) {
   const { run, isSubmitting, fieldErrors, reset } = useAdminAction();
   const [name, setName] = useState(skill?.name ?? "");
-  const [category, setCategory] = useState<SkillDomain>(skill?.category ?? "REKAYASA_WEB");
+  const [category, setCategory] = useState<SkillDomain>(skill?.category ?? "MEDIA_KREATIF");
   const [level, setLevel] = useState(skill?.level ?? 70);
   const [endorsements, setEndorsements] = useState(skill?.endorsements ?? 0);
   const [pinned, setPinned] = useState(skill?.pinned ?? false);
@@ -33,6 +32,10 @@ function SkillForm({
   const [banner, setBanner] = useState<string | null>(null);
 
   const errors = { ...localErrors, ...fieldErrors };
+  const editableDomains: SkillDomain[] =
+    skill && skill.category !== "MEDIA_KREATIF"
+      ? ["MEDIA_KREATIF", skill.category]
+      : ["MEDIA_KREATIF"];
 
   const submit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -104,9 +107,9 @@ function SkillForm({
             value={category}
             onChange={(event) => setCategory(event.target.value as SkillDomain)}
           >
-            {SKILL_DOMAINS.map((option) => (
+            {editableDomains.map((option) => (
               <option key={option} value={option}>
-                {CATEGORY_LABELS[option]}
+                {SKILL_DOMAIN_LABELS[option]}
               </option>
             ))}
           </select>
@@ -141,7 +144,7 @@ function SkillForm({
           label="Dukungan (Endorsement)"
           htmlFor="skill-endorsements"
           error={errors.endorsements}
-          hint="jumlah rekomendasi keahlian, opsional"
+          hint="jumlah dukungan keahlian, opsional"
         >
           <input
             id="skill-endorsements"
@@ -239,7 +242,7 @@ export function SkillsModule({ skills }: { skills: Skill[] }) {
           </h2>
           <p className="admin-head__sub">
             Tingkat penguasaan bukan klaim kosong: setiap baris menyertakan konteks pembuktian yang
-            tampil di halaman publik dan ringkasan CV ATS.
+            tampil di halaman publik. CV PDF diunggah terpisah melalui Konfigurasi.
           </p>
         </div>
         <button
@@ -275,11 +278,7 @@ export function SkillsModule({ skills }: { skills: Skill[] }) {
           style={{ width: 180, height: 32, fontSize: 10 }}
         >
           <option value="ALL">Semua domain</option>
-          {SKILL_DOMAINS.map((option) => (
-            <option key={option} value={option}>
-              {CATEGORY_LABELS[option]}
-            </option>
-          ))}
+          <option value="MEDIA_KREATIF">{SKILL_DOMAIN_LABELS.MEDIA_KREATIF}</option>
         </select>
 
         <div className="admin-toolbar__spacer" />
@@ -334,7 +333,7 @@ export function SkillsModule({ skills }: { skills: Skill[] }) {
                       </button>
                     </td>
                     <td>
-                      <span className="badge">{CATEGORY_LABELS[skill.category]}</span>
+                      <span className="badge">{SKILL_DOMAIN_LABELS[skill.category]}</span>
                     </td>
                     <td>
                       <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
@@ -414,7 +413,7 @@ export function SkillsModule({ skills }: { skills: Skill[] }) {
       {deleteTarget ? (
         <ConfirmModal
           title={`Hapus keahlian ${deleteTarget.name}?`}
-          description="Baris keahlian akan hilang dari grafik Tech Stack publik dan CV ATS. Tindakan ini tercatat permanen pada audit log."
+          description="Baris keahlian akan hilang dari grafik Tech Stack publik. Tindakan ini tercatat permanen pada audit log."
           confirmLabel="Hapus Keahlian"
           tone="danger"
           busy={isSubmitting}

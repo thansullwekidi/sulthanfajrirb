@@ -1,101 +1,42 @@
 import Link from "next/link";
 import { ClockWib } from "@/components/editorial/ClockWib";
-import { SectionHead, Sparkline } from "@/components/editorial/SectionHead";
+import { SectionHead } from "@/components/editorial/SectionHead";
 import { SocialLinks } from "@/components/editorial/SocialLinks";
-import { TechnicalBlueprintSVG } from "@/components/editorial/TechnicalBlueprintSVG";
+import { ProfileSections } from "@/components/editorial/ProfileSections";
 import { Icon } from "@/components/ui/Icon";
 import {
-  CATEGORY_LABELS,
-  CATEGORY_CODES,
+  SKILL_DOMAIN_LABELS,
+  SKILL_DOMAIN_CODES,
+  EMPLOYMENT_TYPE_LABELS,
+  EXPERIENCE_TYPE_LABELS,
   resolveEducation,
-  type Project,
+  WORK_MODE_LABELS,
+  type Article,
+  type Certification,
+  type Experience,
   type Skill,
-  type SkillDomain,
-  SKILL_DOMAINS
+  type SkillDomain
 } from "@/contracts/domain";
-import { formatDateId } from "@/contracts/primitives";
+import { formatDateId, formatPeriod } from "@/contracts/primitives";
 import { getSiteConfig } from "@/server/repositories/config.repository";
 import {
-  listArticles,
+  listCertifications,
+  listExperiences,
   listSkills,
-  listTestimonials
+  listArticles
 } from "@/server/repositories/content.repository";
 import { listProfileSections } from "@/server/repositories/profile.repository";
-import {
-  listFeaturedProjects,
-  listAllProjects,
-  listPublishedProjects
-} from "@/server/repositories/project.repository";
 import { listSocialLinks } from "@/server/repositories/social.repository";
 
 export const dynamic = "force-dynamic";
-
-function MetricCell({ project }: { project: Project }) {
-  return (
-    <div className="work-row__metric">
-      <div>
-        <div className="eyebrow" style={{ marginBottom: 5 }}>
-          {project.metricLabel}
-        </div>
-        <div className="work-row__metric-value">{project.metricValue}</div>
-      </div>
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          gap: 8
-        }}
-      >
-        <span className="mono" style={{ fontSize: 9, color: "var(--muted)" }}>
-          {project.commitHash}
-        </span>
-        <span className="work-row__arrow" aria-hidden="true">
-          <Icon name="arrow-up-right" size={16} />
-        </span>
-      </div>
-    </div>
-  );
-}
-
-function FeaturedRow({ project, index }: { project: Project; index: number }) {
-  return (
-    <Link
-      href={`/karya?karya=${project.slug}`}
-      className="work-row"
-      aria-label={`Buka studi kasus ${project.title}`}
-    >
-      <div className="work-row__index">{String(index + 1).padStart(2, "0")}</div>
-      <div className="work-row__body">
-        <div style={{ display: "flex", flexWrap: "wrap", gap: 6, alignItems: "center" }}>
-          <span className="badge badge--accent">{CATEGORY_LABELS[project.category]}</span>
-          <span className="badge">UNGGULAN</span>
-        </div>
-        <h3 className="work-row__title">{project.title}</h3>
-        <p className="work-row__sub">{project.subtitle}</p>
-        <div className="tag-row">
-          {project.techStack.slice(0, 5).map((tech) => (
-            <span key={tech} className="tag">
-              {tech}
-            </span>
-          ))}
-        </div>
-      </div>
-      <div className="work-row__diagram">
-        <TechnicalBlueprintSVG type={project.diagramType} compact />
-      </div>
-      <MetricCell project={project} />
-    </Link>
-  );
-}
 
 function SkillDomainCell({ domain, skills }: { domain: SkillDomain; skills: Skill[] }) {
   const scoped = skills.filter((skill) => skill.category === domain);
   return (
     <div className="domain-cell">
       <div className="domain-cell__head">
-        <span className="domain-cell__title">{CATEGORY_LABELS[domain]}</span>
-        <span className="domain-cell__code">{CATEGORY_CODES[domain]}</span>
+        <span className="domain-cell__title">{SKILL_DOMAIN_LABELS[domain]}</span>
+        <span className="domain-cell__code">{SKILL_DOMAIN_CODES[domain]}</span>
       </div>
       <div className="stack" style={{ gap: 14 }}>
         {scoped.map((skill) => (
@@ -111,6 +52,9 @@ function SkillDomainCell({ domain, skills }: { domain: SkillDomain; skills: Skil
               />
             </div>
             <span className="skill-bar__context">{skill.context}</span>
+            {skill.endorsements > 0 ? (
+              <span className="skill-bar__endorsements">{skill.endorsements} dukungan</span>
+            ) : null}
           </div>
         ))}
       </div>
@@ -121,50 +65,50 @@ function SkillDomainCell({ domain, skills }: { domain: SkillDomain; skills: Skil
 export default async function OverviewPage() {
   const [
     config,
-    projects,
-    allProjects,
-    featured,
-    articles,
     skills,
-    testimonials,
+    articles,
     socialLinks,
-    profileSections
+    profileSections,
+    experiences,
+    certifications
   ] = await Promise.all([
     getSiteConfig(),
-    listPublishedProjects(),
-    listAllProjects(),
-    listFeaturedProjects(),
-    listArticles(true),
     listSkills(),
-    listTestimonials(),
+    listArticles(true),
     listSocialLinks(true),
-    listProfileSections(true)
+    listProfileSections(true),
+    listExperiences(),
+    listCertifications()
   ]);
 
   const education = resolveEducation(profileSections, config.education);
+  const home = config.homepageSections;
+  const homepageSkills = skills.filter((skill) => skill.category === "MEDIA_KREATIF");
+  const homepageArticles = [...articles]
+    .sort((left, right) => right.publishedAt.localeCompare(left.publishedAt));
 
-  const verifiedMetrics = projects.filter((project) => project.metricValue.trim().length > 0).length;
-  const pinnedSkills = skills.filter((skill) => skill.pinned);
-  const metricCoverage = projects.length === 0 ? 0 : Math.round((verifiedMetrics / projects.length) * 100);
-  const totalReadingMinutes = articles.reduce((sum, article) => sum + article.readTime, 0);
-  const drafts = allProjects.filter((project) => project.status === "DRAFT").length;
+  const pinnedSkills = homepageSkills.filter((skill) => skill.pinned);
 
   return (
     <div className="shell">
+      {home.hero.visible ? (
       <section className="masthead" aria-labelledby="ringkasan-title">
         <div className="masthead__main">
           <div className="headline-split">
-            <span className="eyebrow">Dossier Desain / Edisi 2026</span>
+            <span className="eyebrow">{home.hero.eyebrow}</span>
             {config.nim ? (
               <span className="eyebrow eyebrow--accent">NIM {config.nim}</span>
             ) : null}
           </div>
 
           <h1 className="display" id="ringkasan-title">
-            Muhammad Sulthan
-            <br />
-            Fajri <em>Rabbani</em>
+            {config.fullName}
           </h1>
+          {config.pronouns ? (
+            <span className="mono" style={{ fontSize: 11, color: "var(--muted)" }}>
+              {config.pronouns}
+            </span>
+          ) : null}
 
           <div className="headline-split">
             <span className="mono" style={{ fontSize: 12, letterSpacing: "0.04em" }}>
@@ -181,11 +125,11 @@ export default async function OverviewPage() {
           <div className="aside-actions">
             <Link href="/cv" className="btn btn--primary">
               <Icon name="print" size={13} />
-              Buka CV ATS
+              {home.hero.primaryCtaLabel}
             </Link>
             <Link href="/kontak" className="btn">
               <Icon name="mail" size={13} />
-              Kirim Diskusi
+              {home.hero.contactCtaLabel}
             </Link>
             {config.github ? (
               <a
@@ -195,28 +139,72 @@ export default async function OverviewPage() {
                 className="btn btn--quiet"
               >
                 <Icon name="github" size={13} />
-                Repositori
+                {home.hero.repositoryCtaLabel}
+              </a>
+            ) : null}
+            {config.linkedin ? (
+              <a
+                href={config.linkedin}
+                target="_blank"
+                rel="noreferrer noopener"
+                className="btn btn--quiet"
+              >
+                <Icon name="linkedin" size={13} />
+                LinkedIn
               </a>
             ) : null}
           </div>
         </div>
 
         <aside className="masthead__aside" aria-label="Status dan identitas">
+          {config.coverImageUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              className="masthead__cover"
+              src={config.coverImageUrl}
+              alt={`Foto sampul ${config.fullName}`}
+              loading="lazy"
+            />
+          ) : null}
           {config.avatarUrl ? (
             <img
               src={config.avatarUrl}
               alt={`Foto profil ${config.fullName}`}
-              width={72}
-              height={72}
+              width={220}
+              height={270}
               style={{
-                width: 72,
-                height: 72,
+                width: "min(100%, 220px)",
+                height: 270,
                 objectFit: "cover",
                 border: "1px solid var(--line)",
-                alignSelf: "flex-start"
+                alignSelf: "flex-start",
+                background: "var(--surface)"
               }}
             />
-          ) : null}
+          ) : (
+            <div
+              aria-label="Tempat foto profil"
+              style={{
+                width: "min(100%, 220px)",
+                height: 270,
+                border: "1px dashed var(--line)",
+                display: "grid",
+                placeContent: "center",
+                justifyItems: "center",
+                gap: 12,
+                padding: 18,
+                color: "var(--muted)",
+                textAlign: "center",
+                background: "var(--surface)"
+              }}
+            >
+              <Icon name="user" size={34} />
+              <span className="eyebrow">Foto Profil</span>
+              <span style={{ fontSize: 11, lineHeight: 1.5 }}>
+                Unggah foto melalui Studio CMS → Konfigurasi
+              </span>
+            </div>
+          )}
 
           <div
             className="status-chip"
@@ -255,6 +243,12 @@ export default async function OverviewPage() {
               <dt>Lokasi</dt>
               <dd>{config.location}</dd>
             </div>
+            {config.address ? (
+              <div className="meta-row">
+                <dt>Alamat</dt>
+                <dd>{config.address}</dd>
+              </div>
+            ) : null}
             <div className="meta-row">
               <dt>Pendidikan</dt>
               <dd>
@@ -293,18 +287,6 @@ export default async function OverviewPage() {
                 </dd>
               </div>
             ) : null}
-            {config.connections > 0 ? (
-              <div className="meta-row">
-                <dt>Koneksi</dt>
-                <dd>{config.connections}</dd>
-              </div>
-            ) : null}
-            {config.followers > 0 ? (
-              <div className="meta-row">
-                <dt>Pengikut</dt>
-                <dd>{config.followers}</dd>
-              </div>
-            ) : null}
             <div className="meta-row">
               <dt>Pembaruan</dt>
               <dd>{formatDateId(config.updatedAt)}</dd>
@@ -329,133 +311,183 @@ export default async function OverviewPage() {
           ) : null}
         </aside>
       </section>
+      ) : null}
 
-      <section className="kpi" aria-label="Indikator kinerja utama">
-        <div className="kpi__cell">
-          <div className="kpi__top">
-            <span className="kpi__label">Karya Terpublikasi</span>
-            <span className="mono" style={{ fontSize: 9, color: "var(--ok)" }}>
-              LIVE
-            </span>
+      {home.experienceTimeline.visible ? (
+        <section className="section" aria-labelledby="home-timeline-title">
+          <SectionHead
+            index="01.1"
+            title={home.experienceTimeline.title}
+            meta={`${experiences.length} pengalaman · terbaru di atas`}
+          />
+          <div className="section-intro">
+            <p id="home-timeline-title">{home.experienceTimeline.description}</p>
           </div>
-          <div className="kpi__value">
-            {String(projects.length).padStart(2, "0")}
-            <small>/ {String(projects.length + drafts).padStart(2, "0")}</small>
+          <div className="timeline home-timeline" style={{ marginTop: 24 }}>
+            {experiences.map((experience: Experience) => (
+              <div key={experience.id} className="timeline__row">
+                <div className="timeline__period">
+                  {formatPeriod(
+                    experience.startDate,
+                    experience.endDate,
+                    experience.isCurrent,
+                    experience.period
+                  )}
+                </div>
+                <div className="timeline__body">
+                  <div className="timeline__role-row">
+                    {experience.logoUrl ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={experience.logoUrl} alt="" className="timeline__logo" loading="lazy" />
+                    ) : null}
+                    <h3 className="timeline__role">{experience.role}</h3>
+                  </div>
+                  {experience.organizationUrl ? (
+                    <a
+                      href={experience.organizationUrl}
+                      target="_blank"
+                      rel="noreferrer noopener"
+                      className="timeline__org link-inline"
+                    >
+                      {experience.organization}
+                      <Icon name="external" size={10} />
+                    </a>
+                  ) : (
+                    <span className="timeline__org">{experience.organization}</span>
+                  )}
+                  {experience.description ? (
+                    <p className="home-timeline__description">{experience.description}</p>
+                  ) : null}
+                  {experience.highlights.length > 0 ? (
+                    <ul className="timeline__points">
+                      {experience.highlights.map((highlight) => (
+                        <li key={highlight}>{highlight}</li>
+                      ))}
+                    </ul>
+                  ) : null}
+                  {experience.skills.length > 0 ? <div className="tag-row">{experience.skills.map((skill) => <span className="tag" key={skill}>{skill}</span>)}</div> : null}
+                </div>
+                <div className="timeline__aside">
+                  <span className="badge badge--accent">
+                    {EXPERIENCE_TYPE_LABELS[experience.type]}
+                  </span>
+                  <span className="badge">
+                    {EMPLOYMENT_TYPE_LABELS[experience.employmentType]}
+                  </span>
+                  <span className="mono home-timeline__meta">
+                    {WORK_MODE_LABELS[experience.workMode]}
+                  </span>
+                  {experience.location ? (
+                    <span className="mono home-timeline__meta">{experience.location}</span>
+                  ) : null}
+                </div>
+              </div>
+            ))}
+            {experiences.length === 0 ? (
+              <div className="empty-state">
+                <strong>Belum ada pengalaman</strong>
+                <span>Tambahkan entri melalui Studio CMS.</span>
+              </div>
+            ) : null}
           </div>
-          <Sparkline values={[2, 3, 3, 4, 4, 4]} />
-          <div className="kpi__foot">
-            <span>Terverifikasi di katalog</span>
-            <span>{projects.length} entri</span>
-          </div>
-        </div>
+        </section>
+      ) : null}
 
-        <div className="kpi__cell">
-          <div className="kpi__top">
-            <span className="kpi__label">Metrik Terverifikasi</span>
-            <span className="mono" style={{ fontSize: 9, color: "var(--ok)" }}>
-              {verifiedMetrics}/{projects.length}
-            </span>
+      {home.certifications.visible ? (
+        <section className="section" aria-labelledby="home-certifications-title">
+          <SectionHead
+            index="01.1b"
+            title={home.certifications.title}
+            meta={`${certifications.length} kredensial`}
+          />
+          <div className="section-intro">
+            <p id="home-certifications-title">{home.certifications.description}</p>
           </div>
-          <div className="kpi__value">
-            {metricCoverage}
-            <small>%</small>
+          <div className="home-certifications" style={{ marginTop: 24 }}>
+            {certifications.map((certification: Certification, index: number) => (
+              <article className="home-certification" key={certification.id}>
+                <div className="home-certification__top">
+                  <span className="mono home-certification__number">
+                    {String(index + 1).padStart(2, "0")}
+                  </span>
+                  {certification.imageUrl ? (
+                    <a
+                      href={certification.imageUrl}
+                      target="_blank"
+                      rel="noreferrer noopener"
+                      className="home-certification__image"
+                      aria-label={`Buka foto sertifikat ${certification.title}`}
+                      title="Buka foto sertifikat"
+                    >
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src={certification.imageUrl} alt="" loading="lazy" />
+                    </a>
+                  ) : null}
+                </div>
+                <h3>{certification.title}</h3>
+                <div className="home-certification__issuer">
+                  {certification.issuerLogoUrl ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={certification.issuerLogoUrl} alt="" loading="lazy" />
+                  ) : null}
+                  <span>{certification.issuer}</span>
+                </div>
+                <div className="home-certification__dates">
+                  <span>Terbit {formatDateId(certification.issueDate)}</span>
+                  {certification.expiryDate ? (
+                    <span>Kedaluwarsa {formatDateId(certification.expiryDate)}</span>
+                  ) : null}
+                </div>
+                {certification.credentialId ? (
+                  <span className="mono home-certification__credential">
+                    ID {certification.credentialId}
+                  </span>
+                ) : null}
+                {certification.imageUrl ? (
+                  <a
+                    href={certification.imageUrl}
+                    target="_blank"
+                    rel="noreferrer noopener"
+                    className="link-inline"
+                  >
+                    Lihat foto sertifikat
+                    <Icon name="eye" size={10} />
+                  </a>
+                ) : (
+                  <span className="badge">Foto sertifikat belum diunggah</span>
+                )}
+                {certification.skills.length > 0 ? (
+                  <div className="tag-row">
+                    {certification.skills.map((skill) => (
+                      <span className="tag" key={skill}>{skill}</span>
+                    ))}
+                  </div>
+                ) : null}
+              </article>
+            ))}
+            {certifications.length === 0 ? (
+              <div className="empty-state">
+                <strong>Belum ada sertifikasi</strong>
+                <span>Tambahkan kredensial melalui Studio CMS.</span>
+              </div>
+            ) : null}
           </div>
-          <Sparkline values={[64, 72, 80, 88, 94, metricCoverage]} accent />
-          <div className="kpi__foot">
-            <span>Tiap karya memiliki metrik terukur</span>
-          </div>
-        </div>
+        </section>
+      ) : null}
 
-        <div className="kpi__cell">
-          <div className="kpi__top">
-            <span className="kpi__label">Artikel Jurnal</span>
-            <span className="mono" style={{ fontSize: 9, color: "var(--muted)" }}>
-              LAB NOTES
-            </span>
-          </div>
-          <div className="kpi__value">
-            {String(articles.length).padStart(2, "0")}
-            <small>artikel</small>
-          </div>
-          <Sparkline values={[1, 1, 2, 3, 3, 4]} />
-          <div className="kpi__foot">
-            <span>{totalReadingMinutes} menit total baca</span>
-          </div>
-        </div>
-
-        <div className="kpi__cell">
-          <div className="kpi__top">
-            <span className="kpi__label">Kompetensi Teknis</span>
-            <span className="mono" style={{ fontSize: 9, color: "var(--muted)" }}>
-              4 DOMAIN
-            </span>
-          </div>
-          <div className="kpi__value">
-            {String(skills.length).padStart(2, "0")}
-            <small>entri</small>
-          </div>
-          <Sparkline values={[6, 7, 9, 10, 11, skills.length]} />
-          <div className="kpi__foot">
-            <span>Direktori keahlian terukur</span>
-          </div>
-        </div>
-      </section>
-
-      <section className="section" aria-labelledby="sorotan-title">
-        <SectionHead
-          index="01.1"
-          title="Sorotan Karya Unggulan"
-          meta={`${featured.length} karya · urutan deterministik`}
-        />
-        <div className="section-intro">
-          <p id="sorotan-title">
-            Karya pilihan dengan bukti visual paling kuat. Setiap entri memuat pendekatan desain,
-            metrik capaian, dan tautan ke artefak. Data dibaca langsung dari basis data Studio, bukan
-            dari berkas statis.
-          </p>
-          <div className="stack" style={{ gap: 8 }}>
-            <span className="eyebrow">Status Basis Data</span>
-            <span className="mono" style={{ fontSize: 11 }}>
-              {verifiedMetrics} metrik · {skills.length} kompetensi · {testimonials.length} rekomendasi
-            </span>
-            <span className="mono" style={{ fontSize: 10, color: "var(--muted)" }}>
-              Sinkronisasi terakhir {formatDateId(config.updatedAt)}
-            </span>
-          </div>
-        </div>
-        <div className="work-list" style={{ marginTop: 24 }}>
-          {featured.map((project, index) => (
-            <FeaturedRow key={project.id} project={project} index={index} />
-          ))}
-          {featured.length === 0 ? (
-            <div className="empty-state">
-              <strong>Belum ada karya unggulan</strong>
-              <span>Tandai proyek sebagai unggulan dari Studio CMS.</span>
-            </div>
-          ) : null}
-        </div>
-      </section>
-
+      {home.skills.visible ? (
       <section className="section" aria-labelledby="kompetensi-title">
         <SectionHead
           index="01.2"
-          title="Matriks Kompetensi 4-Domain"
-          meta={`${skills.length} entri · skala 0—100`}
+          title={home.skills.title}
+          meta={`${homepageSkills.length} entri · media & desain`}
         />
         <div className="section-intro">
-          <p id="kompetensi-title">
-            Penguasaan diukur dari artefak yang dapat diperiksa: portofolio, berkas sumber, dan materi
-            terbit. Angka pada bilah menunjukkan tingkat kemahiran yang diklaim, bukan sertifikasi
-            otomatis.
-          </p>
-          <Link href="/rekam-jejak" className="link-inline" style={{ alignSelf: "end" }}>
-            Rekam jejak lengkap
-            <Icon name="arrow-right" size={12} />
-          </Link>
+          <p id="kompetensi-title">{home.skills.description}</p>
         </div>
         {pinnedSkills.length > 0 ? (
           <div className="stack" style={{ gap: 8, marginTop: 20 }}>
-            <span className="eyebrow">Keahlian Unggulan</span>
+            <span className="eyebrow">{home.skills.featuredLabel}</span>
             <div className="tag-row">
               {pinnedSkills.map((skill) => (
                 <span key={skill.id} className="tag">
@@ -466,92 +498,69 @@ export default async function OverviewPage() {
             </div>
           </div>
         ) : null}
-        <div className="domain-grid">
-          {SKILL_DOMAINS.map((domain) => (
-            <SkillDomainCell key={domain} domain={domain} skills={skills} />
+        <div className="domain-grid domain-grid--creative">
+          {(["MEDIA_KREATIF"] as const).map((domain) => (
+            <SkillDomainCell key={domain} domain={domain} skills={homepageSkills} />
           ))}
         </div>
       </section>
+      ) : null}
 
-      <section className="section" aria-labelledby="rekomendasi-title">
+      {home.publications.visible ? (
+      <section className="section" aria-labelledby="publications-title" id="publikasi">
         <SectionHead
           index="01.3"
-          title="Rekomendasi Terverifikasi"
-          meta={`${testimonials.length} sumber · 2024—2026`}
+          title={home.publications.title}
+          meta={`${articles.length} artikel terbit`}
         />
-        <div className="quote-grid" style={{ marginTop: 24 }}>
-          {testimonials.map((testimonial) => (
-            <figure key={testimonial.id} className="quote" style={{ margin: 0 }}>
-              <span className="quote__mark" aria-hidden="true">
-                “
-              </span>
-              <blockquote className="quote__text">{testimonial.quote}</blockquote>
-              <figcaption className="quote__author">
-                <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
-                  {testimonial.avatarUrl ? (
-                    <span
-                      style={{
-                        width: 32,
-                        height: 32,
-                        flex: "0 0 auto",
-                        border: "1px solid var(--line)",
-                        overflow: "hidden",
-                        display: "grid",
-                        placeItems: "center",
-                        background: "var(--surface)"
-                      }}
-                    >
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img
-                        src={testimonial.avatarUrl}
-                        alt={testimonial.author}
-                        width={32}
-                        height={32}
-                        loading="lazy"
-                        style={{ width: "100%", height: "100%", objectFit: "cover" }}
-                      />
-                    </span>
-                  ) : null}
-                  <div className="stack" style={{ gap: 2 }}>
-                    <span className="quote__name">{testimonial.author}</span>
-                    <span className="quote__role">
-                      {testimonial.role} · {testimonial.organization}
-                    </span>
-                  </div>
+        <div className="section-intro">
+          <p id="publications-title">{home.publications.description}</p>
+        </div>
+        <div className="publication-grid" style={{ marginTop: 24 }}>
+          {homepageArticles.map((article: Article, index: number) => (
+              <article key={article.id} className="publication-card">
+                <div className="publication-card__top">
+                  <span className="mono publication-card__index">
+                    {String(index + 1).padStart(2, "0")}
+                  </span>
+                  <span className="badge badge--accent">{article.category}</span>
                 </div>
-                <span className="badge badge--ok" style={{ alignSelf: "flex-start" }}>
-                  {testimonial.verifiedTag}
-                </span>
-                {testimonial.date ? (
-                  <span
-                    className="mono"
-                    style={{ alignSelf: "flex-start", fontSize: 10, color: "var(--muted)" }}
-                  >
-                    {formatDateId(testimonial.date)}
-                  </span>
-                ) : null}
-                {testimonial.relationship ? (
-                  <span style={{ alignSelf: "flex-start", fontSize: 11, color: "var(--muted)" }}>
-                    {testimonial.relationship}
-                  </span>
-                ) : null}
-                {testimonial.profileUrl ? (
-                  <a
-                    href={testimonial.profileUrl}
-                    target="_blank"
-                    rel="noreferrer noopener"
-                    className="link-inline"
-                    style={{ alignSelf: "flex-start", fontSize: 11 }}
-                  >
-                    Lihat profil
-                    <Icon name="external" size={10} />
-                  </a>
-                ) : null}
-              </figcaption>
-            </figure>
-          ))}
+                <h3><Link href={`/publikasi/${article.slug}`}>{article.title}</Link></h3>
+                <p>{article.summary}</p>
+                <div className="publication-card__meta">
+                  <span>{formatDateId(article.publishedAt)}</span>
+                  <span>{article.readTime} menit baca</span>
+                </div>
+                <div className="publication-card__links">
+                  <Link href={`/publikasi/${article.slug}`} className="publication-card__action">
+                    Baca artikel
+                    <Icon name="arrow-right" size={13} />
+                  </Link>
+                {article.externalUrl ? (
+                    <a
+                      href={article.externalUrl}
+                      className="publication-card__action"
+                      target="_blank"
+                      rel="noreferrer noopener"
+                    >
+                      {home.publications.linkLabel}
+                      <Icon name="arrow-up-right" size={13} />
+                    </a>
+                  ) : null}
+                </div>
+              </article>
+            ))}
+          {homepageArticles.length === 0 ? (
+            <div className="empty-state">
+              <strong>Belum ada artikel terbit</strong>
+              <span>Terbitkan artikel melalui Studio CMS untuk menampilkannya di sini.</span>
+            </div>
+          ) : null}
         </div>
       </section>
+      ) : null}
+
+      <ProfileSections sections={profileSections} indexPrefix="02" startAt={1} />
     </div>
   );
 }

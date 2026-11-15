@@ -1,122 +1,71 @@
-import { buildAtsMarkdown } from "@/contracts/ats-markdown";
-import { resolveEducation } from "@/contracts/domain";
-import { CvToolbar } from "@/components/editorial/CvToolbar";
-import { PrintableAtsResume } from "@/components/editorial/PrintableAtsResume";
-import { Icon } from "@/components/ui/Icon";
+import Link from "next/link";
 import { getSiteConfig } from "@/server/repositories/config.repository";
-import {
-  listCertifications,
-  listExperiences,
-  listSkills
-} from "@/server/repositories/content.repository";
-import { listProfileSections } from "@/server/repositories/profile.repository";
-import { listPublishedProjects } from "@/server/repositories/project.repository";
+import { Icon } from "@/components/ui/Icon";
 
 export const dynamic = "force-dynamic";
 
 export const metadata = {
-  title: "CV ATS 1 Halaman",
-  description:
-    "Dokumen CV ATS satu halaman yang tersinkronisasi otomatis dengan basis data portofolio. Siap dicetak ke PDF atau disalin sebagai Markdown."
+  title: "CV — Muhammad Sulthan Fajri Rabbani",
+  description: "CV PDF yang diunggah melalui Studio CMS."
 };
 
 export default async function ResumePage() {
-  const [config, experiences, projects, certifications, skills, profileSections] =
-    await Promise.all([
-      getSiteConfig(),
-      listExperiences(),
-      listPublishedProjects(),
-      listCertifications(),
-      listSkills(),
-      listProfileSections(true)
-    ]);
-
-  const education = resolveEducation(profileSections, config.education);
-
-  const maxExp = config.cvMaxExperiences ?? 3;
-  const maxProj = config.cvMaxProjects ?? 3;
-  const maxCert = config.cvMaxCertifications ?? 3;
-
-  const featured = [...projects]
-    .sort((a, b) => Number(b.isFeatured) - Number(a.isFeatured))
-    .slice(0, maxProj);
-  const topExperiences = [...experiences].slice(0, maxExp);
-  const topCertifications = certifications.slice(0, maxCert);
-
-  const markdown = buildAtsMarkdown({
-    config,
-    education,
-    experiences: topExperiences,
-    projects: featured,
-    certifications: topCertifications,
-    skills
-  });
+  const config = await getSiteConfig();
+  const resumeUrl = config.resumeUrl;
 
   return (
     <div className="shell">
       <section className="cv-toolbar">
-        <div className="stack" style={{ gap: 6 }}>
-          <span className="eyebrow eyebrow--accent">05 / CV ATS 1 Halaman</span>
-          <h1
-            className="display"
-            style={{ fontSize: "clamp(30px, 3.6vw, 44px)", lineHeight: 1 }}
-          >
-            Dokumen siap <em>cetak.</em>
+        <div className="stack" style={{ gap: 8 }}>
+          <span className="eyebrow eyebrow--accent">05 / CV</span>
+          <h1 className="display" style={{ fontSize: "clamp(30px, 3.6vw, 44px)", lineHeight: 1 }}>
+            CV <em>Pribadi</em>
           </h1>
-          <span className="mono" style={{ fontSize: 9, color: "var(--muted)" }}>
-            VERSI {config.cvVersion} · SINKRON DENGAN {projects.length} PROYEK · {skills.length}{" "}
-            KEAHLIAN
-          </span>
+          <p style={{ maxWidth: "60ch", color: "var(--muted)", fontSize: 12, lineHeight: 1.65 }}>
+            Dokumen ini dibuat dan diperbarui sendiri, lalu diunggah melalui Studio CMS. Situs
+            hanya menampilkan berkas PDF yang Anda pilih.
+          </p>
         </div>
-        <CvToolbar markdown={markdown} />
+        {resumeUrl ? (
+          <a className="btn btn--primary" href={`${resumeUrl}?download=1`}>
+            <Icon name="download" size={13} />
+            Unduh CV PDF
+          </a>
+        ) : null}
       </section>
 
-      <div className="cv-stage">
-        <PrintableAtsResume
-          config={config}
-          education={education}
-          experiences={topExperiences}
-          projects={featured}
-          certifications={topCertifications}
-          skills={skills}
-        />
-      </div>
-
-      <section
-        className="no-print"
-        style={{
-          borderTop: "1px solid var(--line)",
-          padding: "22px 0 64px",
-          display: "grid",
-          gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
-          gap: 28
-        }}
-      >
-        <div className="stack" style={{ gap: 6 }}>
-          <span className="eyebrow">Aturan Cetak</span>
-          <p style={{ fontSize: 11.5, color: "var(--muted)", lineHeight: 1.6 }}>
-            Ukuran A4, margin 12 mm, tanpa elemen navigasi. Seluruh warna dipaksa hitam-putih agar
-            terbaca oleh parser ATS.
-          </p>
-        </div>
-        <div className="stack" style={{ gap: 6 }}>
-          <span className="eyebrow">Sinkronisasi</span>
-          <p style={{ fontSize: 11.5, color: "var(--muted)", lineHeight: 1.6 }}>
-            Perubahan pada profil, pengalaman, proyek, sertifikasi, dan keahlian langsung
-            tercermin di lembar ini setelah disimpan di Studio.
-          </p>
-        </div>
-        <div className="stack" style={{ gap: 6 }}>
-          <span className="eyebrow">Verifikasi Manual</span>
-          <p style={{ fontSize: 11.5, color: "var(--muted)", lineHeight: 1.6 }}>
-            Setelah menyimpan PDF, salin seluruh teks dari dokumen untuk memastikan urutan tetap
-            logis tanpa kolom yang saling menyela.
-          </p>
-          <span className="mono" style={{ fontSize: 9, color: "var(--ok)" }}>
-            <Icon name="check" size={11} /> SATU KOLOM · TANPA IKON · TABEL MINIMAL
-          </span>
-        </div>
-      </section>
+      {resumeUrl ? (
+        <section className="cv-stage" aria-label="Pratinjau CV PDF">
+          <iframe
+            title={`CV ${config.fullName}`}
+            src={resumeUrl}
+            style={{
+              width: "100%",
+              minHeight: "min(78vh, 1050px)",
+              border: "1px solid var(--line)",
+              background: "var(--surface)"
+            }}
+          />
+        </section>
+      ) : (
+        <section
+          className="panel"
+          style={{ margin: "36px 0 72px", maxWidth: 720, padding: 24 }}
+        >
+          <div className="stack" style={{ gap: 12, alignItems: "flex-start" }}>
+            <Icon name="file" size={28} />
+            <h2 className="section-head__title">CV belum diunggah</h2>
+            <p style={{ color: "var(--muted)", fontSize: 12, lineHeight: 1.65 }}>
+              Buat CV Anda sendiri, simpan sebagai PDF, lalu unggah melalui Studio CMS → Konfigurasi
+              → CV PDF.
+            </p>
+            <Link href="/admin" className="btn btn--primary">
+              <Icon name="upload" size={12} />
+              Buka Studio CMS
+            </Link>
+          </div>
+        </section>
+      )}
     </div>
   );
 }

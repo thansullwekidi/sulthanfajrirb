@@ -282,7 +282,7 @@ function ExperienceForm({
           label="Tautan Institusi"
           htmlFor="exp-org-url"
           error={errors.organizationUrl}
-          hint="opsional, mis. situs resmi TVRI"
+          hint="opsional, mis. situs resmi instansi"
         >
           <input
             id="exp-org-url"
@@ -321,7 +321,7 @@ function ExperienceForm({
             className="input"
             value={skills}
             onChange={(event) => setSkills(event.target.value)}
-            placeholder="Adobe Illustrator, Adobe Premiere Pro"
+            placeholder="Perangkat dan keahlian yang digunakan"
           />
         </Field>
 
@@ -367,7 +367,6 @@ function CertificationForm({
   const [issueDate, setIssueDate] = useState(certification?.issueDate ?? "");
   const [expiryDate, setExpiryDate] = useState(certification?.expiryDate ?? "");
   const [credentialId, setCredentialId] = useState(certification?.credentialId ?? "");
-  const [verifyUrl, setVerifyUrl] = useState(certification?.verifyUrl ?? "");
   const [skills, setSkills] = useState(certification?.skills.join(", ") ?? "");
   const [imageUrl, setImageUrl] = useState(certification?.imageUrl ?? "");
   const [issuerLogoUrl, setIssuerLogoUrl] = useState(certification?.issuerLogoUrl ?? "");
@@ -388,7 +387,6 @@ function CertificationForm({
       issueDate,
       expiryDate,
       credentialId,
-      verifyUrl,
       skills,
       imageUrl,
       issuerLogoUrl
@@ -499,17 +497,6 @@ function CertificationForm({
           />
         </Field>
 
-        <Field label="URL Verifikasi" htmlFor="cert-url" error={errors.verifyUrl} hint="opsional">
-          <input
-            id="cert-url"
-            className="input mono"
-            value={verifyUrl}
-            onChange={(event) => setVerifyUrl(event.target.value)}
-            placeholder="https://www.credential.net/…"
-            spellCheck={false}
-          />
-        </Field>
-
         <Field
           label="Keahlian Terkait"
           htmlFor="cert-skills"
@@ -526,8 +513,8 @@ function CertificationForm({
 
         <MediaField
           id="cert-image"
-          label="Foto Sertifikasi"
-          hint="opsional, unggah pindaian atau tangkapan sertifikat"
+          label="Foto Lampiran Sertifikat"
+          hint="unggah foto atau hasil pindai sertifikat; tidak memakai URL"
           purpose="CERTIFICATION"
           value={imageUrl}
           onChange={setImageUrl}
@@ -546,7 +533,7 @@ function CertificationForm({
 
         <div className="form-actions">
           <span className="form-note">
-            {isSubmitting ? "Mutex aktif — klik ganda diabaikan." : "Kredensial tampil di CV ATS."}
+            {isSubmitting ? "Mutex aktif — klik ganda diabaikan." : "Entri tampil pada bagian beranda yang aktif."}
           </span>
           <button type="submit" className="btn btn--primary" disabled={isSubmitting}>
             {isSubmitting
@@ -618,12 +605,12 @@ export function TrajectoryModule({
     <div>
       <div className="admin-head">
         <div>
-          <span className="eyebrow eyebrow--accent">03 / Rekam Jejak</span>
+          <span className="eyebrow eyebrow--accent">03 / Pengalaman & Sertifikasi</span>
           <h2 className="admin-head__title" style={{ marginTop: 6 }}>
             Linimasa pengalaman & sertifikasi
           </h2>
           <p className="admin-head__sub">
-            Setiap perubahan langsung memperbarui halaman Rekam Jejak, CV ATS, dan sinyal KPI.
+            Setiap perubahan memperbarui linimasa pengalaman atau sertifikasi di beranda. CV PDF dikelola terpisah melalui Konfigurasi.
             Pemutakhiran dicatat pada log audit dengan hash commit yang dapat ditelusuri.
           </p>
         </div>
