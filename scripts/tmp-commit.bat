@@ -1,2 +1,2 @@
 git add -A
-git commit -m "fix: tanggal testimoni dan relationship kini tampil di beranda"
+git commit -m "test: uji parity 222 titik - semua field CMS yang terisi tampil di web"
