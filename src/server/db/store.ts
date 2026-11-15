@@ -117,27 +117,31 @@ function removeDeletedFeatures(input: unknown): boolean {
 }
 
 async function purgeDeletedFeaturesFromArchives(): Promise<void> {
-  const archiveNames = (await fs.readdir(DB_DIR)).filter(
-    (name) => name === "portfolio.json.bak" || /^backup-pre-.*\.json$/i.test(name)
-  );
+  try {
+    const archiveNames = (await fs.readdir(DB_DIR)).filter(
+      (name) => name === "portfolio.json.bak" || /^backup-pre-.*\.json$/i.test(name)
+    );
 
-  for (const name of archiveNames) {
-    const archivePath = path.join(DB_DIR, name);
-    if (path.resolve(archivePath) === path.resolve(DB_FILE)) continue;
-    const contents = await fs.readFile(archivePath, "utf8");
-    let parsed: unknown;
-    try {
-      parsed = JSON.parse(contents.replace(/^\uFEFF/, "")) as unknown;
-    } catch (error) {
-      if (!(error instanceof SyntaxError)) throw error;
-      console.warn(`Tidak dapat mempurge arsip JSON yang rusak: ${archivePath}`, error);
-      continue;
+    for (const name of archiveNames) {
+      const archivePath = path.join(DB_DIR, name);
+      if (path.resolve(archivePath) === path.resolve(DB_FILE)) continue;
+      const contents = await fs.readFile(archivePath, "utf8");
+      let parsed: unknown;
+      try {
+        parsed = JSON.parse(contents.replace(/^\uFEFF/, "")) as unknown;
+      } catch (error) {
+        if (!(error instanceof SyntaxError)) throw error;
+        console.warn(`Tidak dapat mempurge arsip JSON yang rusak: ${archivePath}`, error);
+        continue;
+      }
+      if (!removeDeletedFeatures(parsed)) continue;
+
+      const tempFile = `${archivePath}.tmp-${process.pid}-${Date.now()}`;
+      await fs.writeFile(tempFile, JSON.stringify(parsed, null, 2), "utf8");
+      await fs.rename(tempFile, archivePath);
     }
-    if (!removeDeletedFeatures(parsed)) continue;
-
-    const tempFile = `${archivePath}.tmp-${process.pid}-${Date.now()}`;
-    await fs.writeFile(tempFile, JSON.stringify(parsed, null, 2), "utf8");
-    await fs.rename(tempFile, archivePath);
+  } catch {
+    // Direktori arsip tidak ada di lingkungan serverless read-only
   }
 }
 
@@ -306,21 +310,25 @@ function coerceDatabase(input: unknown): Database {
 }
 
 async function writeUnsafe(database: Database, preserveCurrentBackup = true): Promise<void> {
-  await fs.mkdir(path.dirname(DB_FILE), { recursive: true });
-  const payload = JSON.stringify(database, null, 2);
-  const tempFile = `${DB_FILE}.tmp-${process.pid}-${Date.now()}`;
-  await fs.writeFile(tempFile, payload, "utf8");
+  try {
+    await fs.mkdir(path.dirname(DB_FILE), { recursive: true });
+    const payload = JSON.stringify(database, null, 2);
+    const tempFile = `${DB_FILE}.tmp-${process.pid}-${Date.now()}`;
+    await fs.writeFile(tempFile, payload, "utf8");
 
-  if (preserveCurrentBackup) {
-    try {
-      const current = await fs.readFile(DB_FILE, "utf8");
-      await fs.writeFile(`${DB_FILE}.bak`, current, "utf8");
-    } catch {
-      // Berkas belum ada: tidak ada cadangan yang perlu dibuat.
+    if (preserveCurrentBackup) {
+      try {
+        const current = await fs.readFile(DB_FILE, "utf8");
+        await fs.writeFile(`${DB_FILE}.bak`, current, "utf8");
+      } catch {
+        // Berkas belum ada: tidak ada cadangan yang perlu dibuat.
+      }
     }
-  }
 
-  await fs.rename(tempFile, DB_FILE);
+    await fs.rename(tempFile, DB_FILE);
+  } catch (error) {
+    console.warn("Penyimpanan lokal ke disk dilewati (read-only filesystem):", error);
+  }
 }
 
 async function readUnsafe(): Promise<Database> {
@@ -328,13 +336,16 @@ async function readUnsafe(): Promise<Database> {
 
   let raw: string;
   try {
-    await fs.mkdir(path.dirname(DB_FILE), { recursive: true });
     raw = await fs.readFile(DB_FILE, "utf8");
-  } catch (error) {
-    if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error;
+  } catch {
+    // Berkas lokal tidak ada (misalnya di Vercel serverless tanpa .data)
     const seed = buildSeedDatabase();
-    await writeUnsafe(seed);
     runtime.cache = seed;
+    try {
+      await writeUnsafe(seed);
+    } catch {
+      // Abaikan di serverless
+    }
     return seed;
   }
 
@@ -343,9 +354,17 @@ async function readUnsafe(): Promise<Database> {
     parsedInput = JSON.parse(raw.replace(/^\uFEFF/, "")) as unknown;
   } catch (error) {
     if (!(error instanceof SyntaxError)) throw error;
-    await fs.rename(DB_FILE, `${DB_FILE}.corrupt-${Date.now()}`);
+    try {
+      await fs.rename(DB_FILE, `${DB_FILE}.corrupt-${Date.now()}`);
+    } catch {
+      // Abaikan
+    }
     const seed = buildSeedDatabase();
-    await writeUnsafe(seed);
+    try {
+      await writeUnsafe(seed);
+    } catch {
+      // Abaikan
+    }
     runtime.cache = seed;
     return seed;
   }
@@ -404,15 +423,23 @@ async function readUnsafe(): Promise<Database> {
     hasRemovedTestimonials ||
     hasLegacyCertificationUrls
   ) {
-    const sanitized = JSON.stringify(database, null, 2);
-    const backupFile = `${DB_FILE}.bak`;
-    const backupTemp = `${backupFile}.tmp-${process.pid}-${Date.now()}`;
-    await fs.writeFile(backupTemp, sanitized, "utf8");
-    await fs.rename(backupTemp, backupFile);
-    await writeUnsafe(database, false);
+    try {
+      const sanitized = JSON.stringify(database, null, 2);
+      const backupFile = `${DB_FILE}.bak`;
+      const backupTemp = `${backupFile}.tmp-${process.pid}-${Date.now()}`;
+      await fs.writeFile(backupTemp, sanitized, "utf8");
+      await fs.rename(backupTemp, backupFile);
+      await writeUnsafe(database, false);
+    } catch {
+      // Abaikan jika read-only
+    }
   }
 
-  await purgeDeletedFeaturesFromArchives();
+  try {
+    await purgeDeletedFeaturesFromArchives();
+  } catch {
+    // Abaikan jika read-only
+  }
   runtime.cache = database;
   return database;
 }

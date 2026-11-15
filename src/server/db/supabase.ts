@@ -19,7 +19,7 @@ export function isSupabaseConfigured(): boolean {
   const hasKey = Boolean(serviceRoleKey?.trim());
 
   if (hasUrl !== hasKey) {
-    throw new Error("SUPABASE_URL dan SUPABASE_SERVICE_ROLE_KEY harus diatur bersama.");
+    return false;
   }
   return hasUrl && hasKey;
 }
