@@ -522,6 +522,19 @@ export default async function OverviewPage() {
                 <span className="badge badge--ok" style={{ alignSelf: "flex-start" }}>
                   {testimonial.verifiedTag}
                 </span>
+                {testimonial.date ? (
+                  <span
+                    className="mono"
+                    style={{ alignSelf: "flex-start", fontSize: 10, color: "var(--muted)" }}
+                  >
+                    {formatDateId(testimonial.date)}
+                  </span>
+                ) : null}
+                {testimonial.relationship ? (
+                  <span style={{ alignSelf: "flex-start", fontSize: 11, color: "var(--muted)" }}>
+                    {testimonial.relationship}
+                  </span>
+                ) : null}
                 {testimonial.profileUrl ? (
                   <a
                     href={testimonial.profileUrl}
