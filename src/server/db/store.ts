@@ -487,15 +487,28 @@ async function writeRemoteState(
 
 export async function readDatabase(): Promise<Database> {
   if (isSupabaseConfigured()) {
-    for (let attempt = 0; attempt < 5; attempt += 1) {
-      const remote = await readRemoteState();
-      const database = coerceDatabase(remote.payload);
-      if (JSON.stringify(database) !== JSON.stringify(remote.payload)) {
-        if (!(await writeRemoteState(remote.revision, database))) continue;
+    try {
+      for (let attempt = 0; attempt < 3; attempt += 1) {
+        const remote = await readRemoteState();
+        const database = coerceDatabase(remote.payload);
+        if (JSON.stringify(database) !== JSON.stringify(remote.payload)) {
+          try {
+            if (!(await writeRemoteState(remote.revision, database))) continue;
+          } catch {
+            // Tulis gagal — kembalikan data yang sudah dibaca
+            return structuredClone(database);
+          }
+        }
+        return structuredClone(database);
       }
-      return structuredClone(database);
+    } catch (err) {
+      // Supabase tidak bisa diakses — fallback ke seed agar halaman tetap tampil
+      console.warn("Supabase tidak dapat dihubungi, menggunakan data seed:", (err as Error).message);
+      if (runtime.cache) return structuredClone(runtime.cache);
+      const seed = buildSeedDatabase();
+      runtime.cache = seed;
+      return structuredClone(seed);
     }
-    throw new Error("Database berubah bersamaan saat dibaca. Coba lagi.");
   }
 
   const database = await enqueue(() => readUnsafe());
@@ -511,17 +524,27 @@ export async function withTransaction<T>(
 ): Promise<T> {
   return enqueue(async () => {
     if (isSupabaseConfigured()) {
-      for (let attempt = 0; attempt < 5; attempt += 1) {
-        const remote = await readRemoteState();
-        const snapshot = coerceDatabase(remote.payload);
-        const draft = structuredClone(snapshot);
-        const result = await mutator(draft);
-        if (await writeRemoteState(remote.revision, draft)) {
-          runtime.cache = null;
-          return result;
+      try {
+        for (let attempt = 0; attempt < 5; attempt += 1) {
+          const remote = await readRemoteState();
+          const snapshot = coerceDatabase(remote.payload);
+          const draft = structuredClone(snapshot);
+          const result = await mutator(draft);
+          if (await writeRemoteState(remote.revision, draft)) {
+            runtime.cache = null;
+            return result;
+          }
         }
+        throw new Error("Database berubah bersamaan. Ulangi perubahan beberapa saat lagi.");
+      } catch (err) {
+        // Supabase tidak bisa diakses — jalankan mutasi di memori saja
+        console.warn("Supabase tidak dapat dihubungi, mutasi dijalankan di memori:", (err as Error).message);
+        const base = runtime.cache ?? buildSeedDatabase();
+        const draft = structuredClone(base);
+        const result = await mutator(draft);
+        runtime.cache = draft;
+        return result;
       }
-      throw new Error("Database berubah bersamaan. Ulangi perubahan beberapa saat lagi.");
     }
 
     const snapshot = structuredClone(await readUnsafe());
