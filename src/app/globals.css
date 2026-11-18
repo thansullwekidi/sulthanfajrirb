@@ -3812,3 +3812,44 @@ a.publication-card:hover {
     content: none !important;
   }
 }
+
+/* ─── SKELETON LOADING ─────────────────────────────────────────────────── */
+@keyframes skel-shimmer {
+  0%   { background-position: -600px 0; }
+  100% { background-position:  600px 0; }
+}
+
+.skel {
+  display: block;
+  border-radius: 2px;
+  background: linear-gradient(
+    90deg,
+    var(--surface) 25%,
+    color-mix(in srgb, var(--line) 60%, var(--surface)) 50%,
+    var(--surface) 75%
+  );
+  background-size: 1200px 100%;
+  animation: skel-shimmer 1.4s ease-in-out infinite;
+}
+
+.skel--eyebrow  { height: 10px; width: 120px; }
+.skel--display  { height: 44px; width: 100%; max-width: 420px; }
+.skel--body     { height: 13px; width: 100%; }
+.skel--btn      { height: 34px; width: 110px; border-radius: 2px; }
+.skel--avatar   { width: min(100%, 220px); height: 270px; }
+.skel--chip     { height: 28px; width: 180px; border-radius: 2px; }
+.skel--card     { height: 100px; width: 100%; border-radius: 2px; }
+.skel--section-head { height: 24px; width: 220px; }
+
+@keyframes skel-pulse {
+  0%, 100% { opacity: 0.4; }
+  50%       { opacity: 1;   }
+}
+.skel-pulse {
+  display: block;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--line);
+  animation: skel-pulse 1.2s ease-in-out infinite;
+}
