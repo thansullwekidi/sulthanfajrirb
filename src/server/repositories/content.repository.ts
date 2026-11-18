@@ -11,10 +11,12 @@ import type {
   ExperienceInput,
   SkillInput
 } from "@/contracts/content.contract";
+import { unstable_cache } from "next/cache";
 import { readingTimeFrom } from "@/contracts/primitives";
 import { readDatabase, withTransaction } from "@/server/db/store";
 import { DomainError, conflictSlug, notFound } from "@/server/errors";
 import { appendAudit, createCommitHash, createEntityId } from "./audit.repository";
+import { PORTFOLIO_CACHE_TAG, revalidatePortfolioCache } from "@/server/db/cache";
 
 /** Repositori konten publik beranda dan profil. */
 
@@ -26,22 +28,28 @@ function sortByOrder<T extends { sortOrder: number }>(items: T[]): T[] {
   return [...items].sort((a, b) => a.sortOrder - b.sortOrder);
 }
 
-/* ------------------------------------------------------------------ BACA */
+/* ------------------------------------------------------------------ BACA (dengan Next.js cache) */
+
+const _readAll = unstable_cache(
+  async () => readDatabase(),
+  ["portfolio-all-content"],
+  { tags: [PORTFOLIO_CACHE_TAG], revalidate: 60 }
+);
 
 export async function listExperiences(): Promise<Experience[]> {
-  return sortByOrder((await readDatabase()).experiences);
+  return sortByOrder((await _readAll()).experiences);
 }
 
 export async function listCertifications(): Promise<Certification[]> {
-  return sortByOrder((await readDatabase()).certifications);
+  return sortByOrder((await _readAll()).certifications);
 }
 
 export async function listSkills(): Promise<Skill[]> {
-  return sortByOrder((await readDatabase()).skills);
+  return sortByOrder((await _readAll()).skills);
 }
 
 export async function listArticles(publishedOnly = true): Promise<Article[]> {
-  const articles = (await readDatabase()).articles;
+  const articles = (await _readAll()).articles;
   const filtered = publishedOnly
     ? articles.filter((article) => article.status === "PUBLISHED")
     : articles;
@@ -49,7 +57,7 @@ export async function listArticles(publishedOnly = true): Promise<Article[]> {
 }
 
 export async function getPublishedArticleBySlug(slug: string): Promise<Article | null> {
-  const article = (await readDatabase()).articles.find(
+  const article = (await _readAll()).articles.find(
     (item) => item.slug === slug && item.status === "PUBLISHED"
   );
   return article ? structuredClone(article) : null;
@@ -58,7 +66,7 @@ export async function getPublishedArticleBySlug(slug: string): Promise<Article |
 /* ---------------------------------------------------------------- REKAM JEJAK */
 
 export async function createExperience(input: ExperienceInput): Promise<Experience> {
-  return withTransaction((draft) => {
+  const result = await withTransaction((draft) => {
     const timestamp = new Date().toISOString();
     const entity: Experience = {
       id: createEntityId("exp"),
@@ -90,10 +98,12 @@ export async function createExperience(input: ExperienceInput): Promise<Experien
     });
     return structuredClone(entity);
   });
+  await revalidatePortfolioCache();
+  return result;
 }
 
 export async function updateExperience(id: string, input: ExperienceInput): Promise<Experience> {
-  return withTransaction((draft) => {
+  const result = await withTransaction((draft) => {
     const entity = draft.experiences.find((item) => item.id === id);
     if (!entity) throw notFound("Pengalaman");
     entity.period = input.period;
@@ -121,6 +131,8 @@ export async function updateExperience(id: string, input: ExperienceInput): Prom
     });
     return structuredClone(entity);
   });
+  await revalidatePortfolioCache();
+  return result;
 }
 
 export async function deleteExperience(id: string): Promise<void> {
@@ -137,12 +149,13 @@ export async function deleteExperience(id: string): Promise<void> {
       summary: `Menghapus pengalaman "${removed.role}".`
     });
   });
+  await revalidatePortfolioCache();
 }
 
 /* -------------------------------------------------------------- SERTIFIKASI */
 
 export async function createCertification(input: CertificationInput): Promise<Certification> {
-  return withTransaction((draft) => {
+  const result = await withTransaction((draft) => {
     const entity: Certification = {
       id: createEntityId("cert"),
       title: input.title,
@@ -166,13 +179,15 @@ export async function createCertification(input: CertificationInput): Promise<Ce
     });
     return structuredClone(entity);
   });
+  await revalidatePortfolioCache();
+  return result;
 }
 
 export async function updateCertification(
   id: string,
   input: CertificationInput
 ): Promise<Certification> {
-  return withTransaction((draft) => {
+  const result = await withTransaction((draft) => {
     const entity = draft.certifications.find((item) => item.id === id);
     if (!entity) throw notFound("Sertifikasi");
     entity.title = input.title;
@@ -192,6 +207,8 @@ export async function updateCertification(
     });
     return structuredClone(entity);
   });
+  await revalidatePortfolioCache();
+  return result;
 }
 
 export async function deleteCertification(id: string): Promise<void> {
@@ -208,12 +225,13 @@ export async function deleteCertification(id: string): Promise<void> {
       summary: `Menghapus sertifikasi "${removed.title}".`
     });
   });
+  await revalidatePortfolioCache();
 }
 
 /* ----------------------------------------------------------------- KEAHLIAN */
 
 export async function createSkill(input: SkillInput): Promise<Skill> {
-  return withTransaction((draft) => {
+  const result = await withTransaction((draft) => {
     const entity: Skill = {
       id: createEntityId("sk"),
       name: input.name,
@@ -235,10 +253,12 @@ export async function createSkill(input: SkillInput): Promise<Skill> {
     });
     return structuredClone(entity);
   });
+  await revalidatePortfolioCache();
+  return result;
 }
 
 export async function updateSkill(id: string, input: SkillInput): Promise<Skill> {
-  return withTransaction((draft) => {
+  const result = await withTransaction((draft) => {
     const entity = draft.skills.find((item) => item.id === id);
     if (!entity) throw notFound("Keahlian");
     entity.name = input.name;
@@ -256,6 +276,8 @@ export async function updateSkill(id: string, input: SkillInput): Promise<Skill>
     });
     return structuredClone(entity);
   });
+  await revalidatePortfolioCache();
+  return result;
 }
 
 export async function deleteSkill(id: string): Promise<void> {
@@ -272,6 +294,7 @@ export async function deleteSkill(id: string): Promise<void> {
       summary: `Menghapus keahlian "${removed.name}".`
     });
   });
+  await revalidatePortfolioCache();
 }
 
 /* -------------------------------------------------------------------- JURNAL */
@@ -284,7 +307,7 @@ function assertArticleSlug(draft: Database, slug: string, excludeId?: string): v
 }
 
 export async function createArticle(input: ArticleInput): Promise<Article> {
-  return withTransaction((draft) => {
+  const result = await withTransaction((draft) => {
     assertArticleSlug(draft, input.slug);
     const timestamp = new Date().toISOString();
     const entity: Article = {
@@ -311,10 +334,12 @@ export async function createArticle(input: ArticleInput): Promise<Article> {
     });
     return structuredClone(entity);
   });
+  await revalidatePortfolioCache();
+  return result;
 }
 
 export async function updateArticle(id: string, input: ArticleInput): Promise<Article> {
-  return withTransaction((draft) => {
+  const result = await withTransaction((draft) => {
     const entity = draft.articles.find((item) => item.id === id);
     if (!entity) throw notFound("Artikel");
     assertArticleSlug(draft, input.slug, id);
@@ -337,6 +362,8 @@ export async function updateArticle(id: string, input: ArticleInput): Promise<Ar
     });
     return structuredClone(entity);
   });
+  await revalidatePortfolioCache();
+  return result;
 }
 
 export async function deleteArticle(id: string): Promise<void> {
@@ -353,6 +380,7 @@ export async function deleteArticle(id: string): Promise<void> {
       summary: `Menghapus artikel "${removed.title}".`
     });
   });
+  await revalidatePortfolioCache();
 }
 
 /* ------------------------------------------------------- NORMALISASI GLOBAL */

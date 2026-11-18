@@ -4,6 +4,15 @@ import type { Database, SiteConfig } from "@/contracts/domain";
 import { buildSeedDatabase } from "./seed";
 import { getSupabaseClient, isSupabaseConfigured } from "./supabase";
 
+async function invalidateNextCache(): Promise<void> {
+  try {
+    const { revalidateTag } = await import("next/cache");
+    revalidateTag("portfolio-db");
+  } catch {
+    // Di luar konteks Next.js — abaikan
+  }
+}
+
 /**
  * LAPISAN 2 — Supabase is the production store; this atomic JSON store remains
  * the local-development fallback.
@@ -532,6 +541,7 @@ export async function withTransaction<T>(
           const result = await mutator(draft);
           if (await writeRemoteState(remote.revision, draft)) {
             runtime.cache = null;
+            await invalidateNextCache();
             return result;
           }
         }
@@ -543,6 +553,7 @@ export async function withTransaction<T>(
         const draft = structuredClone(base);
         const result = await mutator(draft);
         runtime.cache = draft;
+        await invalidateNextCache();
         return result;
       }
     }
@@ -554,6 +565,7 @@ export async function withTransaction<T>(
       const result = await mutator(draft);
       await writeUnsafe(draft);
       runtime.cache = draft;
+      await invalidateNextCache();
       return result;
     } catch (error) {
       await writeUnsafe(snapshot);

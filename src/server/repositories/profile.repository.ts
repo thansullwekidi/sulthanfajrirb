@@ -1,10 +1,12 @@
 import type { ProfileEntry, ProfileSection } from "@/contracts/domain";
 import { PROFILE_ENTRY_LABELS } from "@/contracts/domain";
 import type { ProfileEntryInput, ProfileSectionInput } from "@/contracts/profile.contract";
+import { unstable_cache } from "next/cache";
 import { normalizeSlug } from "@/contracts/primitives";
 import { readDatabase, withTransaction } from "@/server/db/store";
 import { DomainError, notFound } from "@/server/errors";
 import { appendAudit, createCommitHash, createEntityId } from "./audit.repository";
+import { PORTFOLIO_CACHE_TAG, revalidatePortfolioCache } from "@/server/db/cache";
 
 /** Repositori bagian profil bergaya LinkedIn: bagian dan entri dapat ditambah, diubah, diurutkan, disembunyikan, dan dihapus. */
 
@@ -82,8 +84,14 @@ function moveItem<T extends { sortOrder: number }>(items: T[], id: string, direc
 
 /* ------------------------------------------------------------------ BACA */
 
+const _readProfileSections = unstable_cache(
+  async () => (await readDatabase()).profileSections,
+  ["portfolio-profile-sections"],
+  { tags: [PORTFOLIO_CACHE_TAG], revalidate: 60 }
+);
+
 export async function listProfileSections(visibleOnly = false): Promise<ProfileSection[]> {
-  const sections = sortByOrder((await readDatabase()).profileSections);
+  const sections = sortByOrder(await _readProfileSections());
   const scoped = visibleOnly
     ? sections.filter(
         (section) => section.visible && section.entries.some((entry) => entry.visible)
