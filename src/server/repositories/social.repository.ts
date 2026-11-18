@@ -1,8 +1,7 @@
 import type { SocialLink } from "@/contracts/domain";
 import type { SocialLinkInput } from "@/contracts/media.contract";
-import { unstable_cache } from "next/cache";
 import { readDatabase, withTransaction } from "@/server/db/store";
-import { PORTFOLIO_CACHE_TAG, revalidatePortfolioCache } from "@/server/db/cache";
+import { revalidatePortfolioCache } from "@/server/db/cache";
 import { notFound } from "@/server/errors";
 import { appendAudit, createCommitHash, createEntityId } from "./audit.repository";
 
@@ -26,12 +25,7 @@ function normalizeOrders(items: SocialLink[]): void {
 }
 
 export async function listSocialLinks(visibleOnly = false): Promise<SocialLink[]> {
-  const cached = unstable_cache(
-    async () => sortByOrder((await readDatabase()).socialLinks),
-    ["social-links"],
-    { tags: [PORTFOLIO_CACHE_TAG] }
-  );
-  const links = await cached();
+  const links = sortByOrder((await readDatabase()).socialLinks);
   return visibleOnly ? links.filter((link) => link.visible) : links;
 }
 

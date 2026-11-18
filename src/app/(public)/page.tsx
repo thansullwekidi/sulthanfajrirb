@@ -18,18 +18,10 @@ import {
   type SkillDomain
 } from "@/contracts/domain";
 import { formatDateId, formatPeriod } from "@/contracts/primitives";
-import { getSiteConfig } from "@/server/repositories/config.repository";
-import {
-  listCertifications,
-  listExperiences,
-  listSkills,
-  listArticles
-} from "@/server/repositories/content.repository";
-import { listProfileSections } from "@/server/repositories/profile.repository";
-import { listSocialLinks } from "@/server/repositories/social.repository";
+import { readDatabase } from "@/server/db/store";
 
-// ISR: halaman di-cache 30 detik, diperbarui otomatis saat CMS menyimpan data
-export const revalidate = 30;
+// force-dynamic: setiap request membaca snapshot DB yang sama — tidak ada flicker data antar refresh
+export const dynamic = "force-dynamic";
 
 function SkillDomainCell({ domain, skills }: { domain: SkillDomain; skills: Skill[] }) {
   const scoped = skills.filter((skill) => skill.category === domain);
@@ -64,23 +56,28 @@ function SkillDomainCell({ domain, skills }: { domain: SkillDomain; skills: Skil
 }
 
 export default async function OverviewPage() {
-  const [
-    config,
-    skills,
-    articles,
-    socialLinks,
-    profileSections,
-    experiences,
-    certifications
-  ] = await Promise.all([
-    getSiteConfig(),
-    listSkills(),
-    listArticles(true),
-    listSocialLinks(true),
-    listProfileSections(true),
-    listExperiences(),
-    listCertifications()
-  ]);
+  // Baca seluruh database SEKALI — semua data dari snapshot yang sama, tidak ada flicker
+  const db = await readDatabase();
+  const config = db.siteConfig;
+
+  const skills = [...db.skills].sort((a, b) => a.sortOrder - b.sortOrder);
+  const articles = db.articles
+    .filter((a) => a.status === "PUBLISHED")
+    .sort((a, b) => b.publishedAt.localeCompare(a.publishedAt));
+  const socialLinks = db.socialLinks
+    .filter((l) => l.visible)
+    .sort((a, b) => a.sortOrder - b.sortOrder);
+  const profileSections = db.profileSections
+    .filter((s) => s.visible && s.entries.some((e) => e.visible))
+    .sort((a, b) => a.sortOrder - b.sortOrder)
+    .map((s) => ({
+      ...s,
+      entries: s.entries
+        .filter((e) => e.visible)
+        .sort((a, b) => a.sortOrder - b.sortOrder)
+    }));
+  const experiences = [...db.experiences].sort((a, b) => a.sortOrder - b.sortOrder);
+  const certifications = [...db.certifications].sort((a, b) => a.sortOrder - b.sortOrder);
 
   const education = resolveEducation(profileSections, config.education);
   const home = config.homepageSections;

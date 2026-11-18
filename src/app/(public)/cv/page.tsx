@@ -1,8 +1,8 @@
 import Link from "next/link";
-import { getSiteConfig } from "@/server/repositories/config.repository";
+import { readDatabase } from "@/server/db/store";
 import { Icon } from "@/components/ui/Icon";
 
-export const revalidate = 30;
+export const dynamic = "force-dynamic";
 
 export const metadata = {
   title: "CV — Muhammad Sulthan Fajri Rabbani",
@@ -10,7 +10,8 @@ export const metadata = {
 };
 
 export default async function ResumePage() {
-  const config = await getSiteConfig();
+  const db = await readDatabase();
+  const config = db.siteConfig;
   const resumeUrl = config.resumeUrl;
 
   return (

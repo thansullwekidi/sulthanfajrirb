@@ -2,10 +2,9 @@ import { ContactForm } from "@/components/editorial/ContactForm";
 import { ClockWib } from "@/components/editorial/ClockWib";
 import { SocialLinks } from "@/components/editorial/SocialLinks";
 import { Icon } from "@/components/ui/Icon";
-import { getSiteConfig } from "@/server/repositories/config.repository";
-import { listSocialLinks } from "@/server/repositories/social.repository";
+import { readDatabase } from "@/server/db/store";
 
-export const revalidate = 30;
+export const dynamic = "force-dynamic";
 
 export const metadata = {
   title: "Kontak & Diskusi",
@@ -14,7 +13,11 @@ export const metadata = {
 };
 
 export default async function ContactPage() {
-  const [config, socialLinks] = await Promise.all([getSiteConfig(), listSocialLinks(true)]);
+  const db = await readDatabase();
+  const config = db.siteConfig;
+  const socialLinks = db.socialLinks
+    .filter((l) => l.visible)
+    .sort((a, b) => a.sortOrder - b.sortOrder);
 
   return (
     <div className="shell">
