@@ -28,7 +28,8 @@ import {
 import { listProfileSections } from "@/server/repositories/profile.repository";
 import { listSocialLinks } from "@/server/repositories/social.repository";
 
-export const dynamic = "force-dynamic";
+// ISR: halaman di-cache 30 detik, diperbarui otomatis saat CMS menyimpan data
+export const revalidate = 30;
 
 function SkillDomainCell({ domain, skills }: { domain: SkillDomain; skills: Skill[] }) {
   const scoped = skills.filter((skill) => skill.category === domain);

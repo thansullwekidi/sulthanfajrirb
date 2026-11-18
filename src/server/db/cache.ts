@@ -8,11 +8,22 @@ export const PORTFOLIO_CACHE_TAG = "portfolio-db";
 /**
  * Revalidate cache Next.js untuk seluruh data portofolio.
  * Dipanggil setelah setiap mutasi CMS.
+ *
+ * Strategi:
+ * 1. revalidateTag() — hapus semua unstable_cache yang bertag "portfolio-db"
+ * 2. revalidatePath() — tandai halaman statis untuk di-regenerasi ulang (ISR)
  */
 export async function revalidatePortfolioCache(): Promise<void> {
   try {
-    const { revalidateTag } = await import("next/cache");
+    const { revalidateTag, revalidatePath } = await import("next/cache");
+
+    // Invalidate semua query yang di-cache dengan tag ini
     revalidateTag(PORTFOLIO_CACHE_TAG);
+
+    // Regenerasi ulang halaman ISR (revalidate = 30)
+    revalidatePath("/");
+    revalidatePath("/cv");
+    revalidatePath("/kontak");
   } catch {
     // Di luar konteks Next.js (tes, dsb.) — abaikan
   }

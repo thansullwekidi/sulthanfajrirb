@@ -172,53 +172,85 @@ export async function saveMedia(input: {
   const objectPath = `${id}.${extension}`;
 
   if (isSupabaseConfigured()) {
-    const { error } = await getSupabaseClient()
+    const supabase = getSupabaseClient();
+    const { error } = await supabase
       .storage.from(STORAGE_BUCKET)
       .upload(objectPath, buffer, { contentType: sniffed, upsert: false });
     if (error) throw new Error(`Gagal mengunggah media ke Supabase Storage: ${error.message}`);
-  } else {
-    await fs.mkdir(MEDIA_DIR, { recursive: true });
-    await fs.writeFile(path.join(MEDIA_DIR, objectPath), buffer);
-  }
 
-  try {
-    return await withTransaction((draft) => {
-      const asset: MediaAsset = {
-        id,
-        fileName,
-        mimeType: sniffed,
-        byteSize: buffer.byteLength,
-        purpose: input.purpose,
-        url: `/api/v1/media/${id}`,
-        createdAt: new Date().toISOString()
-      };
-      draft.mediaAssets.push(asset);
-      appendAudit(draft, {
-        action: "CREATE",
-        entityType: "MEDIA",
-        entitySlug: id,
-        commitHash: createCommitHash(id),
-        summary: `Mengunggah media "${fileName}" (${Math.round(buffer.byteLength / 1024)} KB).`
-      });
-      return structuredClone(asset);
-    });
-  } catch (error) {
-    // Jangan tinggalkan berkas yatim bila pencatatan basis data gagal.
+    // Pakai public URL Supabase Storage langsung — tidak perlu proxy Next.js
+    const { data: publicData } = supabase.storage.from(STORAGE_BUCKET).getPublicUrl(objectPath);
+    const publicUrl = publicData.publicUrl;
+
     try {
-      if (isSupabaseConfigured()) {
-        const { error: cleanupError } = await getSupabaseClient()
+      return await withTransaction((draft) => {
+        const asset: MediaAsset = {
+          id,
+          fileName,
+          mimeType: sniffed,
+          byteSize: buffer.byteLength,
+          purpose: input.purpose,
+          url: publicUrl,
+          createdAt: new Date().toISOString()
+        };
+        draft.mediaAssets.push(asset);
+        appendAudit(draft, {
+          action: "CREATE",
+          entityType: "MEDIA",
+          entitySlug: id,
+          commitHash: createCommitHash(id),
+          summary: `Mengunggah media "${fileName}" (${Math.round(buffer.byteLength / 1024)} KB).`
+        });
+        return structuredClone(asset);
+      });
+    } catch (error) {
+      // Jangan tinggalkan berkas yatim bila pencatatan basis data gagal.
+      try {
+        const { error: cleanupError } = await supabase
           .storage.from(STORAGE_BUCKET)
           .remove([objectPath]);
         if (cleanupError) {
           console.error("[media] gagal membersihkan unggahan yatim:", cleanupError);
         }
-      } else {
-        await fs.rm(path.join(MEDIA_DIR, objectPath), { force: true });
+      } catch (cleanupError) {
+        console.error("[media] gagal membersihkan unggahan yatim:", cleanupError);
       }
-    } catch (cleanupError) {
-      console.error("[media] gagal membersihkan unggahan yatim:", cleanupError);
+      throw error;
     }
-    throw error;
+  } else {
+    // Mode dev lokal: simpan ke filesystem dan pakai proxy route
+    await fs.mkdir(MEDIA_DIR, { recursive: true });
+    await fs.writeFile(path.join(MEDIA_DIR, objectPath), buffer);
+
+    try {
+      return await withTransaction((draft) => {
+        const asset: MediaAsset = {
+          id,
+          fileName,
+          mimeType: sniffed,
+          byteSize: buffer.byteLength,
+          purpose: input.purpose,
+          url: `/api/v1/media/${id}`,
+          createdAt: new Date().toISOString()
+        };
+        draft.mediaAssets.push(asset);
+        appendAudit(draft, {
+          action: "CREATE",
+          entityType: "MEDIA",
+          entitySlug: id,
+          commitHash: createCommitHash(id),
+          summary: `Mengunggah media "${fileName}" (${Math.round(buffer.byteLength / 1024)} KB).`
+        });
+        return structuredClone(asset);
+      });
+    } catch (error) {
+      try {
+        await fs.rm(path.join(MEDIA_DIR, objectPath), { force: true });
+      } catch (cleanupError) {
+        console.error("[media] gagal membersihkan unggahan yatim:", cleanupError);
+      }
+      throw error;
+    }
   }
 }
 
