@@ -83,7 +83,11 @@ export default async function OverviewPage() {
 
   const education = resolveEducation(profileSections, config.education);
   const home = config.homepageSections;
-  const homepageSkills = skills.filter((skill) => skill.category === "MEDIA_KREATIF");
+  // Tampilkan semua skill yang ada (tidak dibatasi 1 kategori saja)
+  const homepageSkills = skills;
+  // Daftar domain yang benar-benar ada isinya (supaya tidak tampil kolom kosong)
+  const activeDomains = (Object.keys(SKILL_DOMAIN_LABELS) as import("@/contracts/domain").SkillDomain[])
+    .filter((domain) => homepageSkills.some((s) => s.category === domain));
   const homepageArticles = [...articles]
     .sort((left, right) => right.publishedAt.localeCompare(left.publishedAt));
 
@@ -480,7 +484,7 @@ export default async function OverviewPage() {
         <SectionHead
           index="01.2"
           title={home.skills.title}
-          meta={`${homepageSkills.length} entri · media & desain`}
+          meta={`${homepageSkills.length} entri`}
         />
         <div className="section-intro">
           <p id="kompetensi-title">{home.skills.description}</p>
@@ -499,7 +503,7 @@ export default async function OverviewPage() {
           </div>
         ) : null}
         <div className="domain-grid domain-grid--creative">
-          {(["MEDIA_KREATIF"] as const).map((domain) => (
+          {(activeDomains.length > 0 ? activeDomains : (["MEDIA_KREATIF"] as const)).map((domain) => (
             <SkillDomainCell key={domain} domain={domain} skills={homepageSkills} />
           ))}
         </div>

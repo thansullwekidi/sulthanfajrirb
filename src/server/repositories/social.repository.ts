@@ -1,6 +1,8 @@
 import type { SocialLink } from "@/contracts/domain";
 import type { SocialLinkInput } from "@/contracts/media.contract";
+import { unstable_cache } from "next/cache";
 import { readDatabase, withTransaction } from "@/server/db/store";
+import { PORTFOLIO_CACHE_TAG, revalidatePortfolioCache } from "@/server/db/cache";
 import { notFound } from "@/server/errors";
 import { appendAudit, createCommitHash, createEntityId } from "./audit.repository";
 
@@ -24,12 +26,17 @@ function normalizeOrders(items: SocialLink[]): void {
 }
 
 export async function listSocialLinks(visibleOnly = false): Promise<SocialLink[]> {
-  const links = sortByOrder((await readDatabase()).socialLinks);
+  const cached = unstable_cache(
+    async () => sortByOrder((await readDatabase()).socialLinks),
+    ["social-links"],
+    { tags: [PORTFOLIO_CACHE_TAG] }
+  );
+  const links = await cached();
   return visibleOnly ? links.filter((link) => link.visible) : links;
 }
 
 export async function createSocialLink(input: SocialLinkInput): Promise<SocialLink> {
-  return withTransaction((draft) => {
+  const result = await withTransaction((draft) => {
     const link: SocialLink = {
       id: createEntityId("soc"),
       platform: input.platform,
@@ -49,13 +56,15 @@ export async function createSocialLink(input: SocialLinkInput): Promise<SocialLi
     });
     return structuredClone(link);
   });
+  await revalidatePortfolioCache();
+  return result;
 }
 
 export async function updateSocialLink(
   id: string,
   input: SocialLinkInput
 ): Promise<SocialLink> {
-  return withTransaction((draft) => {
+  const result = await withTransaction((draft) => {
     const link = draft.socialLinks.find((item) => item.id === id);
     if (!link) throw notFound("Media sosial");
     link.platform = input.platform;
@@ -71,6 +80,8 @@ export async function updateSocialLink(
     });
     return structuredClone(link);
   });
+  await revalidatePortfolioCache();
+  return result;
 }
 
 export async function deleteSocialLink(id: string): Promise<void> {
@@ -88,13 +99,14 @@ export async function deleteSocialLink(id: string): Promise<void> {
       summary: `Menghapus tautan media sosial ${removed.platform}.`
     });
   });
+  await revalidatePortfolioCache();
 }
 
 export async function moveSocialLink(
   id: string,
   direction: "UP" | "DOWN"
 ): Promise<SocialLink[]> {
-  return withTransaction((draft) => {
+  const result = await withTransaction((draft) => {
     const ordered = sortByOrder(draft.socialLinks);
     const index = ordered.findIndex((item) => item.id === id);
     if (index < 0) throw notFound("Media sosial");
@@ -119,13 +131,15 @@ export async function moveSocialLink(
     });
     return structuredClone(sortByOrder(draft.socialLinks));
   });
+  await revalidatePortfolioCache();
+  return result;
 }
 
 export async function setSocialLinkVisibility(
   id: string,
   visible: boolean
 ): Promise<SocialLink> {
-  return withTransaction((draft) => {
+  const result = await withTransaction((draft) => {
     const link = draft.socialLinks.find((item) => item.id === id);
     if (!link) throw notFound("Media sosial");
     link.visible = visible;
@@ -138,4 +152,6 @@ export async function setSocialLinkVisibility(
     });
     return structuredClone(link);
   });
+  await revalidatePortfolioCache();
+  return result;
 }

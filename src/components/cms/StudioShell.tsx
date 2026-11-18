@@ -162,39 +162,49 @@ export function StudioShell({ session }: { session: AdminSession }) {
     };
   }, [snapshot]);
 
-  const content = useMemo(() => {
+  /**
+   * Render semua modul sekaligus, sembunyikan yang tidak aktif dengan CSS.
+   * Ini mencegah unmount/remount setiap kali tab berganti, sehingga CMS
+   * tidak terasa lag saat berpindah modul.
+   */
+  const renderModules = () => {
     if (!snapshot) return null;
     const database = snapshot.database;
-
-    switch (active) {
-      case "rekam-jejak":
-        return (
+    return (
+      <>
+        <div style={{ display: active === "rekam-jejak" ? "block" : "none" }}>
           <TrajectoryModule
             experiences={database.experiences}
             certifications={database.certifications}
           />
-        );
-      case "profil":
-        return <ProfileModule sections={database.profileSections} />;
-      case "tech-stack":
-        return <SkillsModule skills={database.skills} />;
-      case "publikasi":
-        return <PublicationsModule articles={database.articles} />;
-      case "kotak-masuk":
-        return <InboxModule inquiries={database.inquiries} />;
-      case "media-sosial":
-        return (
+        </div>
+        <div style={{ display: active === "profil" ? "block" : "none" }}>
+          <ProfileModule sections={database.profileSections} />
+        </div>
+        <div style={{ display: active === "tech-stack" ? "block" : "none" }}>
+          <SkillsModule skills={database.skills} />
+        </div>
+        <div style={{ display: active === "publikasi" ? "block" : "none" }}>
+          <PublicationsModule articles={database.articles} />
+        </div>
+        <div style={{ display: active === "kotak-masuk" ? "block" : "none" }}>
+          <InboxModule inquiries={database.inquiries} />
+        </div>
+        <div style={{ display: active === "media-sosial" ? "block" : "none" }}>
           <SocialModule
             socialLinks={database.socialLinks}
             mediaAssets={database.mediaAssets}
           />
-        );
-      case "konfigurasi":
-        return <SettingsModule config={database.siteConfig} />;
-      case "audit":
-        return <AuditModule logs={database.auditLogs} />;
-    }
-  }, [active, snapshot]);
+        </div>
+        <div style={{ display: active === "konfigurasi" ? "block" : "none" }}>
+          <SettingsModule config={database.siteConfig} />
+        </div>
+        <div style={{ display: active === "audit" ? "block" : "none" }}>
+          <AuditModule logs={database.auditLogs} />
+        </div>
+      </>
+    );
+  };
 
   return (
     <div className="admin-shell">
@@ -328,7 +338,7 @@ export function StudioShell({ session }: { session: AdminSession }) {
           </div>
         ) : null}
 
-        {content}
+        {renderModules()}
       </main>
     </div>
   );
