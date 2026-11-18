@@ -35,8 +35,11 @@ export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="id" suppressHydrationWarning>
       <head>
+        {/* Preconnect: browser mulai handshake lebih awal, gambar dan font muncul lebih cepat */}
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        {/* Supabase Storage — foto profil, sertifikat, logo */}
+        <link rel="preconnect" href="https://gxunsxsmtusncztjkezt.supabase.co" crossOrigin="anonymous" />
         <link
           href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;500;600&display=swap"
           rel="stylesheet"

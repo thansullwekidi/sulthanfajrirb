@@ -4,7 +4,7 @@ import { SocialLinks } from "@/components/editorial/SocialLinks";
 import { Icon } from "@/components/ui/Icon";
 import { readDatabase } from "@/server/db/store";
 
-export const dynamic = "force-dynamic";
+export const revalidate = 300;
 
 export const metadata = {
   title: "Kontak & Diskusi",

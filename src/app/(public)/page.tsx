@@ -20,8 +20,11 @@ import {
 import { formatDateId, formatPeriod } from "@/contracts/primitives";
 import { readDatabase } from "@/server/db/store";
 
-// force-dynamic: setiap request membaca snapshot DB yang sama — tidak ada flicker data antar refresh
-export const dynamic = "force-dynamic";
+// Cache halaman di CDN Vercel selama 5 menit sebagai fallback.
+// Saat admin save di CMS, revalidatePortfolioCache() langsung hapus cache ini
+// sehingga pengunjung berikutnya langsung dapat data terbaru.
+// Pengunjung selalu dapat halaman dari cache (cepat) — tidak ada tunggu Supabase.
+export const revalidate = 300;
 
 function SkillDomainCell({ domain, skills }: { domain: SkillDomain; skills: Skill[] }) {
   const scoped = skills.filter((skill) => skill.category === domain);
@@ -165,7 +168,8 @@ export default async function OverviewPage() {
               className="masthead__cover"
               src={config.coverImageUrl}
               alt={`Foto sampul ${config.fullName}`}
-              loading="lazy"
+              loading="eager"
+              fetchPriority="high"
             />
           ) : null}
           {config.avatarUrl ? (
@@ -174,6 +178,8 @@ export default async function OverviewPage() {
               alt={`Foto profil ${config.fullName}`}
               width={220}
               height={270}
+              fetchPriority="high"
+              loading="eager"
               style={{
                 width: "min(100%, 220px)",
                 height: 270,

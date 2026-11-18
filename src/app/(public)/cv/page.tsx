@@ -2,7 +2,7 @@ import Link from "next/link";
 import { readDatabase } from "@/server/db/store";
 import { Icon } from "@/components/ui/Icon";
 
-export const dynamic = "force-dynamic";
+export const revalidate = 300;
 
 export const metadata = {
   title: "CV — Muhammad Sulthan Fajri Rabbani",
