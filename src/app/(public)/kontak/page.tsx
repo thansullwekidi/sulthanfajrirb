@@ -5,7 +5,7 @@ import { Icon } from "@/components/ui/Icon";
 import { getSiteConfig } from "@/server/repositories/config.repository";
 import { listSocialLinks } from "@/server/repositories/social.repository";
 
-export const revalidate = 0;
+export const dynamic = "force-dynamic";
 
 export const metadata = {
   title: "Kontak & Diskusi",

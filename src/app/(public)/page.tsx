@@ -28,7 +28,7 @@ import {
 import { listProfileSections } from "@/server/repositories/profile.repository";
 import { listSocialLinks } from "@/server/repositories/social.repository";
 
-export const revalidate = 0;
+export const dynamic = "force-dynamic";
 
 function SkillDomainCell({ domain, skills }: { domain: SkillDomain; skills: Skill[] }) {
   const scoped = skills.filter((skill) => skill.category === domain);

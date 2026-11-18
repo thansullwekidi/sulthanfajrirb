@@ -11,12 +11,11 @@ import type {
   ExperienceInput,
   SkillInput
 } from "@/contracts/content.contract";
-import { unstable_cache } from "next/cache";
 import { readingTimeFrom } from "@/contracts/primitives";
 import { readDatabase, withTransaction } from "@/server/db/store";
 import { DomainError, conflictSlug, notFound } from "@/server/errors";
 import { appendAudit, createCommitHash, createEntityId } from "./audit.repository";
-import { PORTFOLIO_CACHE_TAG, revalidatePortfolioCache } from "@/server/db/cache";
+import { revalidatePortfolioCache } from "@/server/db/cache";
 
 /** Repositori konten publik beranda dan profil. */
 
@@ -28,28 +27,22 @@ function sortByOrder<T extends { sortOrder: number }>(items: T[]): T[] {
   return [...items].sort((a, b) => a.sortOrder - b.sortOrder);
 }
 
-/* ------------------------------------------------------------------ BACA (dengan Next.js cache) */
-
-const _readAll = unstable_cache(
-  async () => readDatabase(),
-  ["portfolio-all-content"],
-  { tags: [PORTFOLIO_CACHE_TAG], revalidate: 60 }
-);
+/* ------------------------------------------------------------------ BACA (langsung dari Supabase, tanpa cache tambahan) */
 
 export async function listExperiences(): Promise<Experience[]> {
-  return sortByOrder((await _readAll()).experiences);
+  return sortByOrder((await readDatabase()).experiences);
 }
 
 export async function listCertifications(): Promise<Certification[]> {
-  return sortByOrder((await _readAll()).certifications);
+  return sortByOrder((await readDatabase()).certifications);
 }
 
 export async function listSkills(): Promise<Skill[]> {
-  return sortByOrder((await _readAll()).skills);
+  return sortByOrder((await readDatabase()).skills);
 }
 
 export async function listArticles(publishedOnly = true): Promise<Article[]> {
-  const articles = (await _readAll()).articles;
+  const articles = (await readDatabase()).articles;
   const filtered = publishedOnly
     ? articles.filter((article) => article.status === "PUBLISHED")
     : articles;
@@ -57,7 +50,7 @@ export async function listArticles(publishedOnly = true): Promise<Article[]> {
 }
 
 export async function getPublishedArticleBySlug(slug: string): Promise<Article | null> {
-  const article = (await _readAll()).articles.find(
+  const article = (await readDatabase()).articles.find(
     (item) => item.slug === slug && item.status === "PUBLISHED"
   );
   return article ? structuredClone(article) : null;

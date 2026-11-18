@@ -1,18 +1,11 @@
 import type { SiteConfig } from "@/contracts/domain";
 import type { SiteConfigInput } from "@/contracts/config.contract";
-import { unstable_cache } from "next/cache";
 import { readDatabase, withTransaction } from "@/server/db/store";
 import { appendAudit, createCommitHash } from "./audit.repository";
-import { PORTFOLIO_CACHE_TAG, revalidatePortfolioCache } from "@/server/db/cache";
-
-const _getSiteConfig = unstable_cache(
-  async (): Promise<SiteConfig> => (await readDatabase()).siteConfig,
-  ["portfolio-site-config"],
-  { tags: [PORTFOLIO_CACHE_TAG], revalidate: 60 }
-);
+import { revalidatePortfolioCache } from "@/server/db/cache";
 
 export async function getSiteConfig(): Promise<SiteConfig> {
-  return _getSiteConfig();
+  return (await readDatabase()).siteConfig;
 }
 
 export async function updateSiteConfig(input: SiteConfigInput): Promise<SiteConfig> {
