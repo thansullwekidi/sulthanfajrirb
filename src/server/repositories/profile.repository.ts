@@ -99,7 +99,7 @@ export async function listProfileSections(visibleOnly = false): Promise<ProfileS
 /* ---------------------------------------------------------------- BAGIAN */
 
 export async function createProfileSection(input: ProfileSectionInput): Promise<ProfileSection> {
-  return withTransaction((draft) => {
+  const result = await withTransaction((draft) => {
     const timestamp = new Date().toISOString();
     const section: ProfileSection = {
       id: createEntityId("prf"),
@@ -123,13 +123,15 @@ export async function createProfileSection(input: ProfileSectionInput): Promise<
     });
     return structuredClone(section);
   });
+  await revalidatePortfolioCache();
+  return result;
 }
 
 export async function updateProfileSection(
   id: string,
   input: ProfileSectionInput
 ): Promise<ProfileSection> {
-  return withTransaction((draft) => {
+  const result = await withTransaction((draft) => {
     const section = findSection(draft, id);
     section.title = input.title;
     section.subtitle = input.subtitle;
@@ -145,6 +147,8 @@ export async function updateProfileSection(
     });
     return structuredClone(section);
   });
+  await revalidatePortfolioCache();
+  return result;
 }
 
 export async function deleteProfileSection(id: string): Promise<void> {
@@ -162,13 +166,14 @@ export async function deleteProfileSection(id: string): Promise<void> {
       summary: `Menghapus bagian profil "${removed.title}" beserta ${removed.entries.length} entri.`
     });
   });
+  await revalidatePortfolioCache();
 }
 
 export async function moveProfileSection(
   id: string,
   direction: "UP" | "DOWN"
 ): Promise<ProfileSection[]> {
-  return withTransaction((draft) => {
+  const result = await withTransaction((draft) => {
     moveItem(draft.profileSections, id, direction);
     const section = findSection(draft, id);
     section.updatedAt = new Date().toISOString();
@@ -181,13 +186,15 @@ export async function moveProfileSection(
     });
     return structuredClone(sortByOrder(draft.profileSections));
   });
+  await revalidatePortfolioCache();
+  return result;
 }
 
 export async function setProfileSectionVisibility(
   id: string,
   visible: boolean
 ): Promise<ProfileSection> {
-  return withTransaction((draft) => {
+  const result = await withTransaction((draft) => {
     const section = findSection(draft, id);
     section.visible = visible;
     section.updatedAt = new Date().toISOString();
@@ -200,6 +207,8 @@ export async function setProfileSectionVisibility(
     });
     return structuredClone(section);
   });
+  await revalidatePortfolioCache();
+  return result;
 }
 
 /* ----------------------------------------------------------------- ENTRI */
@@ -208,7 +217,7 @@ export async function createProfileEntry(
   sectionId: string,
   input: ProfileEntryInput
 ): Promise<ProfileEntry> {
-  return withTransaction((draft) => {
+  const result = await withTransaction((draft) => {
     const section = findSection(draft, sectionId);
     assertEntryUrlRule(section, input);
     const entry: ProfileEntry = {
@@ -244,6 +253,8 @@ export async function createProfileEntry(
     });
     return structuredClone(entry);
   });
+  await revalidatePortfolioCache();
+  return result;
 }
 
 export async function updateProfileEntry(
@@ -251,7 +262,7 @@ export async function updateProfileEntry(
   entryId: string,
   input: ProfileEntryInput
 ): Promise<ProfileEntry> {
-  return withTransaction((draft) => {
+  const result = await withTransaction((draft) => {
     const section = findSection(draft, sectionId);
     const entry = findEntry(section, entryId);
     assertEntryUrlRule(section, input);
@@ -282,6 +293,8 @@ export async function updateProfileEntry(
     });
     return structuredClone(entry);
   });
+  await revalidatePortfolioCache();
+  return result;
 }
 
 export async function deleteProfileEntry(sectionId: string, entryId: string): Promise<void> {
@@ -301,6 +314,7 @@ export async function deleteProfileEntry(sectionId: string, entryId: string): Pr
       summary: `Menghapus entri "${removed.title}" dari bagian "${section.title}".`
     });
   });
+  await revalidatePortfolioCache();
 }
 
 export async function moveProfileEntry(
@@ -308,7 +322,7 @@ export async function moveProfileEntry(
   entryId: string,
   direction: "UP" | "DOWN"
 ): Promise<ProfileEntry[]> {
-  return withTransaction((draft) => {
+  const result = await withTransaction((draft) => {
     const section = findSection(draft, sectionId);
     moveItem(section.entries, entryId, direction);
     const entry = findEntry(section, entryId);
@@ -322,6 +336,8 @@ export async function moveProfileEntry(
     });
     return structuredClone(sortByOrder(section.entries));
   });
+  await revalidatePortfolioCache();
+  return result;
 }
 
 export async function setProfileEntryVisibility(
@@ -329,7 +345,7 @@ export async function setProfileEntryVisibility(
   entryId: string,
   visible: boolean
 ): Promise<ProfileEntry> {
-  return withTransaction((draft) => {
+  const result = await withTransaction((draft) => {
     const section = findSection(draft, sectionId);
     const entry = findEntry(section, entryId);
     entry.visible = visible;
@@ -343,6 +359,8 @@ export async function setProfileEntryVisibility(
     });
     return structuredClone(entry);
   });
+  await revalidatePortfolioCache();
+  return result;
 }
 
 /** Validasi integritas: tidak boleh ada slug bagian ganda. */
