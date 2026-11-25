@@ -24,8 +24,15 @@ const DB_FILE =
     ? process.env.PORTFOLIO_DB_PATH
     : path.join(DB_DIR, "portfolio.json");
 
+interface RemoteSnapshot {
+  database: Database;
+  fetchedAt: number;
+}
+
 interface StoreRuntime {
   cache: Database | null;
+  lastKnownGood: RemoteSnapshot | null;
+  inFlightRead: Promise<Database> | null;
   queue: Promise<unknown>;
   initializing: Promise<void> | null;
 }
@@ -36,9 +43,13 @@ const runtimeHost = globalThis as typeof globalThis & {
 
 const runtime: StoreRuntime = (runtimeHost.__portfolioStoreRuntime ??= {
   cache: null,
+  lastKnownGood: null,
+  inFlightRead: null,
   queue: Promise.resolve(),
   initializing: null
 });
+runtime.lastKnownGood ??= null;
+runtime.inFlightRead ??= null;
 
 function enqueue<T>(task: () => Promise<T>): Promise<T> {
   const next = runtime.queue.then(task, task);
@@ -458,11 +469,20 @@ interface RemoteDatabaseState {
   payload: unknown;
 }
 
-async function readRemoteState(): Promise<RemoteDatabaseState> {
+const REMOTE_COALESCE_TTL_MS = 2_000;
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+async function readRemoteStateOnce(): Promise<RemoteDatabaseState> {
   const { data, error } = await getSupabaseClient().rpc("portfolio_read");
   if (error) throw new Error(`Gagal membaca database Supabase: ${error.message}`);
+  if (!Array.isArray(data)) {
+    throw new Error("Respons portfolio_read dari Supabase tidak valid.");
+  }
 
-  const state = (data as RemoteDatabaseState[] | null)?.[0];
+  const state = (data as RemoteDatabaseState[])[0];
   if (state) return state;
 
   const { error: initializeError } = await getSupabaseClient().rpc("portfolio_initialize", {
@@ -482,6 +502,23 @@ async function readRemoteState(): Promise<RemoteDatabaseState> {
   return initialized;
 }
 
+async function readRemoteStateWithRetry(maxAttempts = 3): Promise<RemoteDatabaseState> {
+  let lastError: unknown;
+  for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
+    try {
+      return await readRemoteStateOnce();
+    } catch (error) {
+      lastError = error;
+      if (attempt + 1 < maxAttempts) {
+        await sleep(attempt === 0 ? 250 : 600);
+      }
+    }
+  }
+  throw lastError instanceof Error
+    ? lastError
+    : new Error("Gagal membaca database Supabase setelah beberapa percobaan.");
+}
+
 async function writeRemoteState(
   expectedRevision: number,
   payload: Database
@@ -494,30 +531,53 @@ async function writeRemoteState(
   return data !== null;
 }
 
+async function fetchRemoteDatabase(): Promise<Database> {
+  const now = Date.now();
+  if (
+    runtime.lastKnownGood &&
+    now - runtime.lastKnownGood.fetchedAt < REMOTE_COALESCE_TTL_MS
+  ) {
+    return runtime.lastKnownGood.database;
+  }
+
+  if (runtime.inFlightRead) {
+    return runtime.inFlightRead;
+  }
+
+  const promise = (async () => {
+    try {
+      const remote = await readRemoteStateWithRetry();
+      const database = coerceDatabase(remote.payload);
+      runtime.lastKnownGood = {
+        database,
+        fetchedAt: Date.now()
+      };
+      return database;
+    } catch (error) {
+      // Gunakan snapshot asli Supabase terakhir bila tersedia di memori instance.
+      // JANGAN jatuh ke buildSeedDatabase() saat Supabase dikonfigurasi agar cache ISR
+      // CDN Vercel tidak pernah tertimpa data kosong.
+      if (runtime.lastKnownGood) {
+        console.warn(
+          "[store] Gagal membaca Supabase sementara, memakai snapshot asli terakhir:",
+          (error as Error).message
+        );
+        return runtime.lastKnownGood.database;
+      }
+      throw error;
+    } finally {
+      runtime.inFlightRead = null;
+    }
+  })();
+
+  runtime.inFlightRead = promise;
+  return promise;
+}
+
 export async function readDatabase(): Promise<Database> {
   if (isSupabaseConfigured()) {
-    try {
-      for (let attempt = 0; attempt < 3; attempt += 1) {
-        const remote = await readRemoteState();
-        const database = coerceDatabase(remote.payload);
-        if (JSON.stringify(database) !== JSON.stringify(remote.payload)) {
-          try {
-            if (!(await writeRemoteState(remote.revision, database))) continue;
-          } catch {
-            // Tulis gagal — kembalikan data yang sudah dibaca
-            return structuredClone(database);
-          }
-        }
-        return structuredClone(database);
-      }
-    } catch (err) {
-      // Supabase tidak bisa diakses — fallback ke seed agar halaman tetap tampil
-      console.warn("Supabase tidak dapat dihubungi, menggunakan data seed:", (err as Error).message);
-      if (runtime.cache) return structuredClone(runtime.cache);
-      const seed = buildSeedDatabase();
-      runtime.cache = seed;
-      return structuredClone(seed);
-    }
+    const database = await fetchRemoteDatabase();
+    return structuredClone(database);
   }
 
   const database = await enqueue(() => readUnsafe());
@@ -533,29 +593,24 @@ export async function withTransaction<T>(
 ): Promise<T> {
   return enqueue(async () => {
     if (isSupabaseConfigured()) {
-      try {
-        for (let attempt = 0; attempt < 5; attempt += 1) {
-          const remote = await readRemoteState();
-          const snapshot = coerceDatabase(remote.payload);
-          const draft = structuredClone(snapshot);
-          const result = await mutator(draft);
-          if (await writeRemoteState(remote.revision, draft)) {
-            runtime.cache = null;
-            await invalidateNextCache();
-            return result;
-          }
-        }
-        throw new Error("Database berubah bersamaan. Ulangi perubahan beberapa saat lagi.");
-      } catch (err) {
-        // Supabase tidak bisa diakses — jalankan mutasi di memori saja
-        console.warn("Supabase tidak dapat dihubungi, mutasi dijalankan di memori:", (err as Error).message);
-        const base = runtime.cache ?? buildSeedDatabase();
-        const draft = structuredClone(base);
+      for (let attempt = 0; attempt < 5; attempt += 1) {
+        const remote = await readRemoteStateWithRetry();
+        const snapshot = coerceDatabase(remote.payload);
+        const draft = structuredClone(snapshot);
         const result = await mutator(draft);
-        runtime.cache = draft;
-        await invalidateNextCache();
-        return result;
+        if (await writeRemoteState(remote.revision, draft)) {
+          runtime.lastKnownGood = {
+            database: structuredClone(draft),
+            fetchedAt: Date.now()
+          };
+          runtime.inFlightRead = null;
+          runtime.cache = null;
+          await invalidateNextCache();
+          return result;
+        }
+        await sleep(60 * (attempt + 1));
       }
+      throw new Error("Database berubah bersamaan. Ulangi perubahan beberapa saat lagi.");
     }
 
     const snapshot = structuredClone(await readUnsafe());
@@ -599,4 +654,6 @@ export async function databaseFilePath(): Promise<string> {
 
 export function invalidateRuntimeCache(): void {
   runtime.cache = null;
+  runtime.lastKnownGood = null;
+  runtime.inFlightRead = null;
 }

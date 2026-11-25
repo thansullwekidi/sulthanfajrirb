@@ -7,6 +7,7 @@ import {
   RESUME_MAX_BYTES
 } from "@/contracts/domain";
 import { readDatabase, withTransaction } from "@/server/db/store";
+import { revalidatePortfolioCache } from "@/server/db/cache";
 import { getSupabaseClient, isSupabaseConfigured } from "@/server/db/supabase";
 import { DomainError, notFound } from "@/server/errors";
 import { appendAudit, createCommitHash, createEntityId } from "./audit.repository";
@@ -318,6 +319,7 @@ export async function deleteMedia(id: string): Promise<void> {
   });
 
   await purgeMediaFiles([removed]);
+  await revalidatePortfolioCache();
 }
 
 /** Total pemakaian penyimpanan media dalam byte. */

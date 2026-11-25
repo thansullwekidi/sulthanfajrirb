@@ -20,7 +20,8 @@ export async function revalidatePortfolioCache(): Promise<void> {
     // Invalidate semua query yang di-cache dengan tag ini
     revalidateTag(PORTFOLIO_CACHE_TAG);
 
-    // Regenerasi ulang halaman ISR (revalidate = 30)
+    // Regenerasi ulang seluruh layout publik & halaman ISR
+    revalidatePath("/", "layout");
     revalidatePath("/");
     revalidatePath("/cv");
     revalidatePath("/kontak");

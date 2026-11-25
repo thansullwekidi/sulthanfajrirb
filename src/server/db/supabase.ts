@@ -41,6 +41,19 @@ export function getSupabaseClient(): SupabaseClient {
       autoRefreshToken: false,
       persistSession: false,
       detectSessionInUrl: false
+    },
+    global: {
+      fetch: (input, init) => {
+        const timeoutSignal = AbortSignal.timeout(7_000);
+        const signal = init?.signal
+          ? AbortSignal.any([init.signal, timeoutSignal])
+          : timeoutSignal;
+        return fetch(input, {
+          ...init,
+          cache: "no-store",
+          signal
+        });
+      }
     }
   });
   return runtime.client;

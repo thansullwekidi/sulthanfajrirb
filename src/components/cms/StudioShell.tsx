@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { apiPost } from "@/client/state/api-client";
@@ -276,10 +275,16 @@ export function StudioShell({ session }: { session: AdminSession }) {
           </div>
 
           <div className="admin-rail__actions">
-            <Link href="/" className="btn btn--sm" style={{ flex: 1, justifyContent: "center" }}>
+            <a
+              href="/"
+              target="_blank"
+              rel="noreferrer noopener"
+              className="btn btn--sm"
+              style={{ flex: 1, justifyContent: "center" }}
+            >
               <Icon name="arrow-up-right" size={11} />
               Situs
-            </Link>
+            </a>
             <button
               type="button"
               className="btn btn--sm"

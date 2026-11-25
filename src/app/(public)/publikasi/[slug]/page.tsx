@@ -5,7 +5,7 @@ import { Icon } from "@/components/ui/Icon";
 import { formatDateId } from "@/contracts/primitives";
 import { getPublishedArticleBySlug } from "@/server/repositories/content.repository";
 
-export const dynamic = "force-dynamic";
+export const revalidate = 300;
 
 export async function generateMetadata({
   params

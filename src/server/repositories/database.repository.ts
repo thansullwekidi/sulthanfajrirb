@@ -10,6 +10,7 @@ import type { DatabaseImport } from "@/contracts/database.contract";
 import { readingTimeFrom } from "@/contracts/primitives";
 import { buildSeedDatabase } from "@/server/db/seed";
 import { readDatabase, withTransaction } from "@/server/db/store";
+import { revalidatePortfolioCache } from "@/server/db/cache";
 import { appendAudit, createCommitHash } from "./audit.repository";
 import { detachMediaReferences, purgeMediaFiles } from "./media.repository";
 
@@ -210,6 +211,7 @@ export async function importDatabase(input: DatabaseImport): Promise<Database> {
     return structuredClone(draft);
   });
   await purgeMediaFiles(removedMedia);
+  await revalidatePortfolioCache();
   return imported;
 }
 
@@ -244,6 +246,7 @@ export async function resetDatabase(): Promise<Database> {
     return structuredClone(draft);
   });
   await purgeMediaFiles(removedMedia);
+  await revalidatePortfolioCache();
   return reset;
 }
 
