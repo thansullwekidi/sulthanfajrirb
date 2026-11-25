@@ -17,6 +17,49 @@ import { fieldErrorsFromZod } from "@/contracts/validation";
 
 const ACCEPT = "image/png,image/jpeg,image/webp,image/gif,image/avif";
 
+function maxDimensionForPurpose(purpose: MediaPurpose): number {
+  switch (purpose) {
+    case "ORGANIZATION_LOGO":
+    case "EDUCATION_LOGO":
+      return 256;
+    case "AVATAR":
+      return 720;
+    default:
+      return 1600;
+  }
+}
+
+async function optimizeImageFile(file: File, purpose: MediaPurpose): Promise<File> {
+  if (!["image/jpeg", "image/png"].includes(file.type) || file.size <= 80 * 1024) {
+    return file;
+  }
+  try {
+    const bitmap = await createImageBitmap(file);
+    const maxDim = maxDimensionForPurpose(purpose);
+    const scale = Math.min(1, maxDim / Math.max(bitmap.width, bitmap.height));
+    const width = Math.max(1, Math.round(bitmap.width * scale));
+    const height = Math.max(1, Math.round(bitmap.height * scale));
+    const canvas = document.createElement("canvas");
+    canvas.width = width;
+    canvas.height = height;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) {
+      bitmap.close();
+      return file;
+    }
+    ctx.drawImage(bitmap, 0, 0, width, height);
+    bitmap.close();
+    const blob = await new Promise<Blob | null>((resolve) =>
+      canvas.toBlob(resolve, "image/webp", 0.85)
+    );
+    if (!blob || blob.size >= file.size) return file;
+    const baseName = file.name.replace(/\.[^.]+$/, "");
+    return new File([blob], `${baseName}.webp`, { type: "image/webp" });
+  } catch {
+    return file;
+  }
+}
+
 function readAsDataUrl(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -67,15 +110,17 @@ export function MediaField({
       return;
     }
 
+    const optimized = await optimizeImageFile(file, purpose);
+
     let dataUrl: string;
     try {
-      dataUrl = await readAsDataUrl(file);
+      dataUrl = await readAsDataUrl(optimized);
     } catch (caught) {
       setLocalError(caught instanceof Error ? caught.message : "Berkas tidak dapat dibaca.");
       return;
     }
 
-    const parsed = mediaUploadSchema.safeParse({ fileName: file.name, dataUrl, purpose });
+    const parsed = mediaUploadSchema.safeParse({ fileName: optimized.name, dataUrl, purpose });
     if (!parsed.success) {
       const fields = fieldErrorsFromZod(parsed.error);
       setLocalError(fields.dataUrl ?? fields.fileName ?? "Berkas tidak valid.");
@@ -86,7 +131,7 @@ export function MediaField({
       () => apiPost<MediaAsset>("/api/v1/media", parsed.data),
       {
         successTitle: "Gambar diunggah",
-        successDescription: file.name
+        successDescription: optimized.name
       }
     );
 
@@ -99,7 +144,10 @@ export function MediaField({
     }
   };
 
-  const mediaId = /^\/api\/v1\/media\/([A-Za-z0-9_-]+)$/.exec(value)?.[1] ?? "";
+  const mediaId =
+    /\/(?:api\/v1\/media\/|portfolio-media\/)(med_[A-Za-z0-9_-]+)(?:\.[a-z0-9]+)?$/i.exec(
+      value
+    )?.[1] ?? "";
   const deleteUploadedImage = async () => {
     if (!mediaId) {
       setLocalError("Foto ini bukan aset unggahan lokal yang dapat dihapus.");

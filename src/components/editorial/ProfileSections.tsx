@@ -1,4 +1,5 @@
 import { Icon } from "@/components/ui/Icon";
+import { PortfolioImage } from "@/components/ui/PortfolioImage";
 import {
   PROFILE_ENTRY_LABELS,
   PROFILE_SECTION_LAYOUT,
@@ -60,14 +61,13 @@ function EntryLogo({ url, title }: { url: string; title: string }) {
         background: "var(--surface)"
       }}
     >
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img
+      <PortfolioImage
         src={url}
         alt={`Logo ${title}`}
         width={34}
         height={34}
+        sizes="34px"
         style={{ width: "100%", height: "100%", objectFit: "contain" }}
-        loading="lazy"
       />
     </span>
   );
@@ -147,11 +147,12 @@ function EntryImage({ url, title, wide }: { url: string; title: string; wide?: b
         maxWidth: wide ? "100%" : 220
       }}
     >
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img
+      <PortfolioImage
         src={url}
         alt={title}
-        loading="lazy"
+        width={wide ? 384 : 220}
+        height={wide ? 240 : 150}
+        sizes={wide ? "(max-width: 768px) 100vw, 384px" : "220px"}
         style={{
           width: "100%",
           height: "auto",

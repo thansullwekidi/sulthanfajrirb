@@ -176,7 +176,11 @@ export async function saveMedia(input: {
     const supabase = getSupabaseClient();
     const { error } = await supabase
       .storage.from(STORAGE_BUCKET)
-      .upload(objectPath, buffer, { contentType: sniffed, upsert: false });
+      .upload(objectPath, buffer, {
+        contentType: sniffed,
+        cacheControl: "31536000",
+        upsert: false
+      });
     if (error) throw new Error(`Gagal mengunggah media ke Supabase Storage: ${error.message}`);
 
     // Pakai public URL Supabase Storage langsung — tidak perlu proxy Next.js

@@ -4,6 +4,7 @@ import { SectionHead } from "@/components/editorial/SectionHead";
 import { SocialLinks } from "@/components/editorial/SocialLinks";
 import { ProfileSections } from "@/components/editorial/ProfileSections";
 import { Icon } from "@/components/ui/Icon";
+import { PortfolioImage } from "@/components/ui/PortfolioImage";
 import {
   SKILL_DOMAIN_LABELS,
   SKILL_DOMAIN_CODES,
@@ -163,23 +164,24 @@ export default async function OverviewPage() {
 
         <aside className="masthead__aside" aria-label="Status dan identitas">
           {config.coverImageUrl ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
+            <PortfolioImage
               className="masthead__cover"
               src={config.coverImageUrl}
               alt={`Foto sampul ${config.fullName}`}
-              loading="eager"
-              fetchPriority="high"
+              width={640}
+              height={200}
+              sizes="(max-width: 900px) 100vw, 320px"
+              priority
             />
           ) : null}
           {config.avatarUrl ? (
-            <img
+            <PortfolioImage
               src={config.avatarUrl}
               alt={`Foto profil ${config.fullName}`}
               width={220}
               height={270}
-              fetchPriority="high"
-              loading="eager"
+              sizes="220px"
+              priority
               style={{
                 width: "min(100%, 220px)",
                 height: 270,
@@ -345,8 +347,14 @@ export default async function OverviewPage() {
                 <div className="timeline__body">
                   <div className="timeline__role-row">
                     {experience.logoUrl ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img src={experience.logoUrl} alt="" className="timeline__logo" loading="lazy" />
+                      <PortfolioImage
+                        src={experience.logoUrl}
+                        alt=""
+                        width={34}
+                        height={34}
+                        sizes="34px"
+                        className="timeline__logo"
+                      />
                     ) : null}
                     <h3 className="timeline__role">{experience.role}</h3>
                   </div>
@@ -427,16 +435,26 @@ export default async function OverviewPage() {
                       aria-label={`Buka foto sertifikat ${certification.title}`}
                       title="Buka foto sertifikat"
                     >
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img src={certification.imageUrl} alt="" loading="lazy" />
+                      <PortfolioImage
+                        src={certification.imageUrl}
+                        alt=""
+                        width={88}
+                        height={62}
+                        sizes="88px"
+                      />
                     </a>
                   ) : null}
                 </div>
                 <h3>{certification.title}</h3>
                 <div className="home-certification__issuer">
                   {certification.issuerLogoUrl ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img src={certification.issuerLogoUrl} alt="" loading="lazy" />
+                    <PortfolioImage
+                      src={certification.issuerLogoUrl}
+                      alt=""
+                      width={22}
+                      height={22}
+                      sizes="22px"
+                    />
                   ) : null}
                   <span>{certification.issuer}</span>
                 </div>
