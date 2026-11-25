@@ -50,7 +50,6 @@ export function getSupabaseClient(): SupabaseClient {
           : timeoutSignal;
         return fetch(input, {
           ...init,
-          cache: "no-store",
           signal
         });
       }
