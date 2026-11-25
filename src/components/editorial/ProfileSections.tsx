@@ -66,7 +66,6 @@ function EntryLogo({ url, title }: { url: string; title: string }) {
         alt={`Logo ${title}`}
         width={34}
         height={34}
-        sizes="34px"
         style={{ width: "100%", height: "100%", objectFit: "contain" }}
       />
     </span>
@@ -152,7 +151,7 @@ function EntryImage({ url, title, wide }: { url: string; title: string; wide?: b
         alt={title}
         width={wide ? 384 : 220}
         height={wide ? 240 : 150}
-        sizes={wide ? "(max-width: 768px) 100vw, 384px" : "220px"}
+        {...(wide ? { sizes: "(max-width: 768px) 100vw, 384px" } : {})}
         style={{
           width: "100%",
           height: "auto",

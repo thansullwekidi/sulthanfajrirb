@@ -13,7 +13,7 @@ interface PortfolioImageProps {
   alt: string;
   width: number;
   height: number;
-  sizes: string;
+  sizes?: string;
   priority?: boolean;
   className?: string;
   style?: CSSProperties;
@@ -36,7 +36,7 @@ export function PortfolioImage({
         alt={alt}
         width={width}
         height={height}
-        sizes={sizes}
+        {...(sizes ? { sizes } : {})}
         quality={80}
         {...(priority ? { priority: true } : { loading: "eager" as const })}
         decoding={priority ? "sync" : "async"}

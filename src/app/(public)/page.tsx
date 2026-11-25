@@ -180,7 +180,6 @@ export default async function OverviewPage() {
               alt={`Foto profil ${config.fullName}`}
               width={220}
               height={270}
-              sizes="220px"
               priority
               style={{
                 width: "min(100%, 220px)",
@@ -352,7 +351,6 @@ export default async function OverviewPage() {
                         alt=""
                         width={34}
                         height={34}
-                        sizes="34px"
                         className="timeline__logo"
                       />
                     ) : null}
@@ -440,7 +438,6 @@ export default async function OverviewPage() {
                         alt=""
                         width={88}
                         height={62}
-                        sizes="88px"
                       />
                     </a>
                   ) : null}
@@ -453,7 +450,6 @@ export default async function OverviewPage() {
                       alt=""
                       width={22}
                       height={22}
-                      sizes="22px"
                     />
                   ) : null}
                   <span>{certification.issuer}</span>
